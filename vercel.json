@@ -1,20 +1,23 @@
 {
   "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "api/index.js",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.js"
+      "source": "/api/days",
+      "destination": "/api/days.js"
     },
     {
-      "src": "/(.*)",
-      "dest": "/public/$1"
+      "source": "/api/words/:day",
+      "destination": "/api/words/[day].js?day=:day"
+    },
+    {
+      "source": "/api/stats",
+      "destination": "/api/stats.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/public/$1"
     }
   ]
 }
+
 

@@ -1,14 +1,6 @@
-// Vercel serverless function wrapper for Express app
-const express = require('express');
-const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const pdf = require('pdf-parse');
-
-const app = express();
-
-app.use(cors());
-app.use(express.json());
 
 // Cache for extracted data
 let wordsData = null;
@@ -18,9 +10,24 @@ async function extractPdfContent() {
         return wordsData;
     }
 
-    const pdfPath = path.join(__dirname, '..', 'japwords.pdf');
+    // Try multiple possible paths for Vercel
+    const possiblePaths = [
+        path.join(__dirname, '..', 'japwords.pdf'),
+        path.join(process.cwd(), 'japwords.pdf'),
+        path.join('/var/task', 'japwords.pdf'),
+        path.join('/var/task', '..', 'japwords.pdf')
+    ];
     
-    if (!fs.existsSync(pdfPath)) {
+    let pdfPath = null;
+    for (const testPath of possiblePaths) {
+        if (fs.existsSync(testPath)) {
+            pdfPath = testPath;
+            break;
+        }
+    }
+    
+    if (!pdfPath) {
+        console.error('PDF not found. Tried paths:', possiblePaths);
         return { error: "PDF file not found" };
     }
 
@@ -130,76 +137,5 @@ async function extractPdfContent() {
     }
 }
 
-// Routes
-app.get('/api/days', async (req, res) => {
-    try {
-        const data = await extractPdfContent();
-        if (data.error) {
-            return res.status(500).json(data);
-        }
-
-        const daysList = [];
-        for (const dayNum of Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b))) {
-            const dayInfo = data[dayNum];
-            daysList.push({
-                day: parseInt(dayNum),
-                title: dayInfo.title || "",
-                wordCount: dayInfo.words ? dayInfo.words.length : 0
-            });
-        }
-
-        res.json({ days: daysList });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.get('/api/words/:day', async (req, res) => {
-    try {
-        const day = parseInt(req.params.day);
-        const data = await extractPdfContent();
-        
-        if (data.error) {
-            return res.status(500).json(data);
-        }
-
-        if (!data[day]) {
-            return res.status(404).json({ error: `Day ${day} not found` });
-        }
-
-        const dayInfo = data[day];
-        res.json({
-            day: day,
-            title: dayInfo.title || "",
-            words: dayInfo.words || []
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.get('/api/stats', async (req, res) => {
-    try {
-        const data = await extractPdfContent();
-        if (data.error) {
-            return res.status(500).json(data);
-        }
-
-        const totalWords = Object.values(data).reduce((sum, dayInfo) => {
-            return sum + (dayInfo.words ? dayInfo.words.length : 0);
-        }, 0);
-        const totalDays = Object.keys(data).length;
-
-        res.json({
-            totalDays: totalDays,
-            totalWords: totalWords,
-            averageWordsPerDay: totalDays > 0 ? Math.round(totalWords / totalDays * 10) / 10 : 0
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Export for Vercel serverless
-module.exports = app;
+module.exports = extractPdfContent;
 
