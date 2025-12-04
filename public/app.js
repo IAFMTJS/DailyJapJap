@@ -1,5 +1,7 @@
-// API base URL
-const API_BASE = 'http://localhost:3000/api';
+// API base URL - automatically detects environment
+const API_BASE = window.location.hostname === 'localhost' 
+    ? 'http://localhost:3000/api' 
+    : '/api';
 
 // Global state
 let allDaysData = {};

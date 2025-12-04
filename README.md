@@ -4,11 +4,7 @@ A modern, sophisticated Japanese learning platform built with Node.js and Expres
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Node.js (v16 or higher)
-- npm
-
-### Installation
+### Local Development
 
 1. **Install dependencies:**
    ```bash
@@ -31,6 +27,35 @@ A modern, sophisticated Japanese learning platform built with Node.js and Expres
    ```
    http://localhost:3000
    ```
+
+## 🌐 Vercel Deployment
+
+### Framework Selection
+When deploying to Vercel, select: **Other** or **Node.js**
+
+The project is configured with:
+- **Backend:** Node.js with Express (serverless functions)
+- **Frontend:** Vanilla JavaScript (static files)
+
+### Deployment Steps
+
+1. **Connect your repository to Vercel**
+2. **Framework Preset:** Select **"Other"** or **"Node.js"**
+3. **Root Directory:** Leave as default (root)
+4. **Build Command:** Leave empty (no build needed)
+5. **Output Directory:** Leave empty
+6. **Install Command:** `npm install`
+
+Vercel will automatically:
+- Detect the `vercel.json` configuration
+- Deploy API routes from `/api` as serverless functions
+- Serve static files from `/public`
+
+### Important Files for Vercel
+- `vercel.json` - Vercel configuration
+- `api/index.js` - Serverless API handler
+- `public/` - Static frontend files
+- `package.json` - Dependencies
 
 ## ✨ Features
 
@@ -70,10 +95,13 @@ A modern, sophisticated Japanese learning platform built with Node.js and Expres
 
 ```
 DailyJapJap/
-├── server.js          # Express server
-├── package.json       # npm dependencies
-├── japwords.pdf       # Source PDF file
-├── public/            # Frontend files
+├── api/
+│   └── index.js          # Vercel serverless function
+├── server.js             # Local Express server
+├── package.json          # npm dependencies
+├── vercel.json           # Vercel configuration
+├── japwords.pdf          # Source PDF file
+├── public/               # Frontend files
 │   ├── index.html
 │   ├── style.css
 │   └── app.js
@@ -92,15 +120,17 @@ The server uses `pdf-parse` to extract content from the PDF file. The data is ca
 
 ## 📝 Notes
 
-- Japanese text-to-speech requires browser support (Chrome/Edge recommended)
+- Japanese text-to-speech requires browser support (Chrome/Edge recommended, iOS Chrome supported)
 - Progress is saved in browser localStorage
 - The PDF is parsed automatically on server start
+- Long vowels (ō, ū, etc.) are preserved in furigana
 
 ## 🎯 Tech Stack
 
 - **Backend:** Node.js, Express
 - **Frontend:** Vanilla JavaScript, Modern CSS
 - **PDF Parsing:** pdf-parse
+- **Deployment:** Vercel (serverless)
 - **Styling:** Custom CSS with CSS Variables
 
 ---
