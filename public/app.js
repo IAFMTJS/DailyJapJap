@@ -107,6 +107,11 @@ async function loadDays() {
         
         // Clear and populate selects
         [daySelect, flashcardDaySelect, quizDaySelect].forEach(select => {
+            if (!select) {
+                console.warn('Select element not found');
+                return;
+            }
+            
             select.innerHTML = '<option value="">Select a day...</option>';
             data.days.forEach(day => {
                 const option = document.createElement('option');
@@ -115,7 +120,7 @@ async function loadDays() {
                 select.appendChild(option);
             });
             
-            // Add "All Days" option for flashcard and quiz
+            // Add "All Days" option for flashcard and quiz (at the beginning)
             if (select !== daySelect) {
                 const allOption = document.createElement('option');
                 allOption.value = '';
@@ -415,7 +420,21 @@ function switchMode(mode) {
     
     // Initialize mode-specific features
     if (mode === 'flashcards') {
-        loadFlashcards();
+        // Ensure flashcard dropdown is populated before loading
+        const flashcardDaySelect = document.getElementById('flashcardDaySelect');
+        if (flashcardDaySelect && flashcardDaySelect.options.length <= 1) {
+            // Days not loaded yet, wait a bit and try again
+            setTimeout(() => {
+                if (flashcardDaySelect.options.length > 1) {
+                    loadFlashcards();
+                } else {
+                    console.warn('Flashcard day select not populated, loading days first...');
+                    loadDays().then(() => loadFlashcards());
+                }
+            }, 100);
+        } else {
+            loadFlashcards();
+        }
     } else if (mode === 'quiz') {
         resetQuiz();
     } else if (mode === 'stats') {
@@ -430,7 +449,16 @@ async function loadFlashcards() {
         const daySelect = document.getElementById('flashcardDaySelect');
         if (!daySelect) {
             console.error('flashcardDaySelect not found');
+            showFlashcardError('Flashcard day selector not found');
             return;
+        }
+        
+        // Show loading state (but keep the flashcard structure)
+        const wrapper = document.getElementById('flashcardWrapper');
+        const flashcard = document.getElementById('flashcard');
+        if (wrapper && !flashcard) {
+            // Only show loading if flashcard doesn't exist
+            wrapper.innerHTML = '<div class="loading-state"><div class="premium-spinner"></div><p>Loading flashcards...</p></div>';
         }
         
         const selectedDay = daySelect.value;
@@ -485,6 +513,16 @@ async function loadFlashcards() {
         // Shuffle cards
         flashcardWords = shuffleArray([...flashcardWords]);
         currentFlashcardIndex = 0;
+        
+        console.log('Flashcards loaded:', flashcardWords.length, 'words');
+        console.log('First card:', flashcardWords[0]);
+        
+        // Ensure flashcard mode is visible
+        const flashcardPanel = document.getElementById('flashcardMode');
+        if (flashcardPanel) {
+            flashcardPanel.classList.add('active');
+        }
+        
         showFlashcard();
     } catch (error) {
         console.error('Error loading flashcards:', error);
@@ -493,30 +531,68 @@ async function loadFlashcards() {
 }
 
 function showFlashcardError(message) {
+    console.error('Flashcard error:', message);
     const wrapper = document.getElementById('flashcardWrapper');
     if (wrapper) {
-        wrapper.innerHTML = `<div class="empty-state"><h2>Error</h2><p>${escapeHtml(message)}</p></div>`;
+        wrapper.innerHTML = `<div class="empty-state"><h2>⚠️ Error</h2><p>${escapeHtml(message)}</p><p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted);">Check the browser console (F12) for more details.</p></div>`;
     }
 }
 
 function showFlashcard() {
+    const wrapper = document.getElementById('flashcardWrapper');
+    if (!wrapper) {
+        console.error('flashcardWrapper not found');
+        return;
+    }
+    
     if (flashcardWords.length === 0) {
-        const wrapper = document.getElementById('flashcardWrapper');
-        if (wrapper) {
-            wrapper.innerHTML = '<div class="empty-state"><h2>No words available</h2><p>Please select a day or wait for words to load.</p></div>';
-        }
+        wrapper.innerHTML = '<div class="empty-state"><h2>No words available</h2><p>Please select a day or wait for words to load.</p></div>';
         return;
     }
     
     const card = flashcardWords[currentFlashcardIndex];
     if (!card) {
         console.error('No card at index', currentFlashcardIndex);
+        wrapper.innerHTML = '<div class="empty-state"><h2>Error</h2><p>Card not found at index ' + currentFlashcardIndex + '</p></div>';
         return;
     }
     
-    const flashcard = document.getElementById('flashcard');
+    // Make sure the flashcard HTML structure exists
+    let flashcard = document.getElementById('flashcard');
     if (!flashcard) {
-        console.error('Flashcard element not found');
+        // Recreate the flashcard structure if it was removed
+        wrapper.innerHTML = `
+            <div class="premium-flashcard" id="flashcard">
+                <div class="flashcard-front">
+                    <div class="flashcard-japanese" id="flashcardJapanese"></div>
+                    <div class="flashcard-furigana" id="flashcardFurigana"></div>
+                    <button class="premium-btn flip-btn" onclick="flipCard()">
+                        <span>👁️</span> Reveal Answer
+                    </button>
+                </div>
+                <div class="flashcard-back">
+                    <div class="flashcard-japanese" id="flashcardJapaneseBack"></div>
+                    <div class="flashcard-furigana" id="flashcardFuriganaBack"></div>
+                    <div class="flashcard-translation" id="flashcardTranslation"></div>
+                    <div class="flashcard-actions">
+                        <button class="action-btn wrong-btn" onclick="rateCard(false)">
+                            ❌ Hard
+                        </button>
+                        <button class="action-btn correct-btn" onclick="rateCard(true)">
+                            ✅ Easy
+                        </button>
+                    </div>
+                    <button class="premium-btn flip-btn" onclick="flipCard()">
+                        <span>🔄</span> Flip Back
+                    </button>
+                </div>
+            </div>
+        `;
+        flashcard = document.getElementById('flashcard');
+    }
+    
+    if (!flashcard) {
+        console.error('Failed to create flashcard element');
         return;
     }
     
@@ -542,6 +618,8 @@ function showFlashcard() {
     if (progressEl) {
         progressEl.textContent = `${currentFlashcardIndex + 1} / ${flashcardWords.length}`;
     }
+    
+    console.log('Flashcard displayed:', card.japanese, card.furigana);
 }
 
 function flipCard() {
