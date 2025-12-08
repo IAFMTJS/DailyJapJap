@@ -405,27 +405,29 @@ export async function checkAnswer(matchedPairs = null) {
     
     // Get user answer based on exercise type
     if (currentExercise.type === 'multiple_choice') {
-        // Try to get the value from the selected button's textContent as fallback
-        if (selectedOption === null || selectedOption === undefined) {
-            // Check if a button is visually selected
+        // For multiple choice, validator expects the INDEX (number), not the value
+        if (selectedOptionIndex === null || selectedOptionIndex === undefined) {
+            // Try to get index from selected button
             const selectedBtn = document.querySelector('.exercise-option.selected');
             if (selectedBtn) {
-                selectedOption = selectedBtn.textContent.trim();
-                console.log('Got value from selected button:', selectedOption);
+                const btnIndex = parseInt(selectedBtn.dataset.optionIndex);
+                if (!isNaN(btnIndex)) {
+                    selectedOptionIndex = btnIndex;
+                    selectedOption = currentExercise.options[btnIndex];
+                } else {
+                    showCelebration('Please select an answer', 'error');
+                    return;
+                }
             } else {
                 showCelebration('Please select an answer', 'error');
                 return;
             }
         }
         
-        // Use the stored value, or get from exercise options if we have the index
-        if (selectedOptionIndex !== null && currentExercise.options && currentExercise.options[selectedOptionIndex]) {
-            userAnswer = currentExercise.options[selectedOptionIndex];
-        } else {
-            userAnswer = selectedOption;
-        }
+        // Send the INDEX to the validator (it expects a number)
+        userAnswer = selectedOptionIndex;
         
-        console.log('Submitting answer:', userAnswer, 'selectedOption:', selectedOption, 'index:', selectedOptionIndex);
+        console.log('Submitting multiple choice answer - Index:', userAnswer, 'Value:', currentExercise.options[userAnswer]);
     } else if (currentExercise.type === 'translation' || currentExercise.type === 'listen') {
         const answerInput = document.getElementById('exerciseAnswer');
         userAnswer = answerInput ? answerInput.value.trim() : '';
@@ -472,8 +474,15 @@ export async function checkAnswer(matchedPairs = null) {
             }
         }
         
-        // Handle result
-        if (validationResult.correct) {
+        // Handle result - IMPORTANT: Check validationResult.correct properly
+        console.log('Validation result:', validationResult);
+        console.log('Is correct?', validationResult.correct, 'Type:', typeof validationResult.correct);
+        
+        // Ensure we're checking the correct property (handle both boolean true and string "true")
+        const isCorrect = validationResult.correct === true || validationResult.correct === 'true' || validationResult.correct === 1;
+        
+        if (isCorrect) {
+            // CORRECT ANSWER - Do NOT lose hearts
             exerciseScore++;
             
             // Use eventBus to emit XP gain event (if available)
@@ -487,9 +496,21 @@ export async function checkAnswer(matchedPairs = null) {
                 window.xpService.addXP(xpGained, 'Correct answer');
             }
             
-            showCelebration(validationResult.feedback || '✅ Correct!', 'success');
+            // Update skill strength (if service available)
+            if (window.skillStrengthService && currentSessionId) {
+                // Get skill ID from session or current exercise
+                const skillId = currentExercise.skillId || (currentSessionId ? `day-${currentSessionId}` : null);
+                if (skillId) {
+                    window.skillStrengthService.updateSkillStrength(skillId, true, 1);
+                }
+            }
             
-            // Update UI
+            // Show positive feedback
+            const feedbackMessage = validationResult.feedback || '✅ Correct!';
+            showCelebration(feedbackMessage, 'success');
+            console.log('✅ Correct answer! Score:', exerciseScore, 'XP gained:', xpGained);
+            
+            // Update UI to show correct answer
             updateExerciseFeedback(validationResult, true);
             
             setTimeout(async () => {
@@ -504,10 +525,25 @@ export async function checkAnswer(matchedPairs = null) {
                 showNextExercise();
             }, 2000);
         } else {
+            // WRONG ANSWER - Lose a heart
             exerciseMistakes++;
-            if (loseHeart()) {
+            console.log('❌ Wrong answer. Mistakes:', exerciseMistakes);
+            
+            // Only lose heart if we actually have hearts to lose
+            const heartLost = loseHeart();
+            if (heartLost) {
                 exerciseHearts--;
+                console.log('💔 Heart lost. Remaining:', exerciseHearts);
             }
+            
+            // Update skill strength for incorrect answer
+            if (window.skillStrengthService && currentSessionId) {
+                const skillId = currentExercise.skillId || (currentSessionId ? `day-${currentSessionId}` : null);
+                if (skillId) {
+                    window.skillStrengthService.updateSkillStrength(skillId, false, 1);
+                }
+            }
+            
             showCelebration(validationResult.feedback || '❌ Wrong!', 'error');
             
             // Update UI
@@ -542,15 +578,31 @@ function updateExerciseFeedback(validationResult, isCorrect) {
     // Add feedback styling
     if (currentExercise.type === 'multiple_choice') {
         const options = exerciseContent.querySelectorAll('.exercise-option');
-        options.forEach((opt) => {
+        const correctAnswerText = validationResult.correctAnswer || currentExercise.options[currentExercise.correctIndex];
+        
+        options.forEach((opt, idx) => {
             opt.classList.add('disabled');
             const optText = opt.textContent.trim();
-            if (optText === validationResult.correctAnswer) {
+            
+            // Highlight correct answer (always show which one was correct)
+            if (optText === correctAnswerText || idx === currentExercise.correctIndex) {
                 opt.classList.add('correct');
-            } else if (optText === selectedOption && !isCorrect) {
+            }
+            
+            // Highlight wrong answer if user selected incorrectly
+            if (!isCorrect && (optText === selectedOption || idx === selectedOptionIndex)) {
                 opt.classList.add('wrong');
             }
         });
+        
+        // Add visual feedback message
+        const feedbackDiv = document.createElement('div');
+        feedbackDiv.className = `exercise-feedback-message ${isCorrect ? 'correct' : 'wrong'}`;
+        feedbackDiv.innerHTML = `
+            <p><strong>${isCorrect ? '✅ Correct!' : '❌ Incorrect'}</strong></p>
+            ${!isCorrect && correctAnswerText ? `<p>The correct answer is: <strong>${escapeHtml(correctAnswerText)}</strong></p>` : ''}
+        `;
+        exerciseContent.appendChild(feedbackDiv);
     }
     
     // Show explanation if available
@@ -566,6 +618,40 @@ function finishExerciseSession() {
     const percentage = Math.round((exerciseScore / exerciseSet.length) * 100);
     const isPerfect = exerciseMistakes === 0;
     
+    // Update streak when exercise is completed
+    if (window.streakService) {
+        window.streakService.updateStreak();
+    }
+    
+    // Record challenge progress
+    if (window.challengesPage && window.challengesPage.recordChallengeProgress) {
+        window.challengesPage.recordChallengeProgress('xp', Math.floor(exerciseScore * 10));
+        if (isPerfect) {
+            window.challengesPage.recordChallengeProgress('perfect', 1);
+        }
+    }
+    
+    // Update skill strength based on performance
+    if (window.skillStrengthService && exerciseSet.length > 0) {
+        const firstExercise = exerciseSet[0];
+        const skillId = firstExercise.skillId || (currentSessionId ? `day-${currentSessionId}` : null);
+        if (skillId) {
+            // Update strength based on overall performance
+            const performanceRatio = exerciseScore / exerciseSet.length;
+            const difficulty = performanceRatio > 0.8 ? 2 : performanceRatio > 0.6 ? 1.5 : 1;
+            
+            // Update strength for each correct answer
+            for (let i = 0; i < exerciseScore; i++) {
+                window.skillStrengthService.updateSkillStrength(skillId, true, difficulty);
+            }
+            
+            // Update strength for each mistake
+            for (let i = 0; i < exerciseMistakes; i++) {
+                window.skillStrengthService.updateSkillStrength(skillId, false, 1);
+            }
+        }
+    }
+    
     if (isPerfect) {
         studyStats.perfectLessons++;
         if (window.achievementsPage && window.achievementsPage.unlockAchievement) {
@@ -574,10 +660,22 @@ function finishExerciseSession() {
         if (window.xpService) {
             window.xpService.addXP(50, 'Perfect lesson');
         }
+        
+        // Show perfect lesson celebration
+        if (window.celebrationService) {
+            window.celebrationService.showPerfectLessonCelebration();
+        }
     }
     
     studyStats.exercisesCompleted += exerciseSet.length;
     saveStudyStats();
+    
+    // Refresh path page to show updated skill strengths
+    if (window.pathPage && window.pathPage.renderSkillTree) {
+        setTimeout(() => {
+            window.pathPage.renderSkillTree();
+        }, 1000);
+    }
     
     const exerciseContent = document.getElementById('exerciseContent');
     if (exerciseContent) {
@@ -588,6 +686,11 @@ function finishExerciseSession() {
                 <div class="result-percentage">${percentage}%</div>
                 ${isPerfect ? '<div class="perfect-badge">💯 Perfect!</div>' : ''}
                 <div class="result-xp">+${exerciseScore * 10} XP</div>
+                <div style="margin-top: 2rem;">
+                    <button class="premium-btn" onclick="window.app.switchMode('path')">
+                        Back to Path
+                    </button>
+                </div>
             </div>
         `;
     }

@@ -18,6 +18,9 @@ import * as achievementsPage from './pages/AchievementsPage.js';
 import * as questsPage from './pages/QuestsPage.js';
 import * as exercisePage from './pages/ExercisePage.js';
 import * as statsPage from './pages/StatsPage.js';
+import * as gamesPage from './pages/GamesPage.js';
+import * as chapterTestPage from './pages/ChapterTestPage.js';
+import * as challengesPage from './pages/ChallengesPage.js';
 
 // Global state
 let currentMode = 'study'; // Changed from 'path' to 'study' to avoid auto-loading learning path
@@ -31,6 +34,9 @@ const routeMap = {
     '/quiz': 'quiz',
     '/kana': 'kana',
     '/practice': 'practice',
+    '/games': 'games',
+    '/test': 'test',
+    '/challenges': 'challenges',
     '/achievements': 'achievements',
     '/quests': 'quests',
     '/exercise': 'exercise',
@@ -64,6 +70,9 @@ const pages = {
     quiz: quizPage,
     kana: kanaPage,
     practice: practicePage,
+    games: gamesPage,
+    test: chapterTestPage,
+    challenges: challengesPage,
     achievements: achievementsPage,
     quests: questsPage,
     exercise: exercisePage,
@@ -117,6 +126,16 @@ async function initializeApp() {
         
         // Load study stats first (doesn't require API)
         loadStudyStats();
+        
+        // Initialize enhanced services
+        if (window.streakService) {
+            window.streakService.checkStreakOnLoad();
+            window.streakService.updateStreakDisplay();
+        }
+        
+        if (window.skillStrengthService) {
+            window.skillStrengthService.updateAllSkillStrengths();
+        }
         
         // Sync studyStats with StateManager for compatibility (if available)
         if (window.stateManager) {
@@ -617,6 +636,9 @@ function updatePageTitle(mode) {
         quiz: 'Quiz - DailyJapJap',
         kana: 'Kana - DailyJapJap',
         practice: 'Practice - DailyJapJap',
+        games: 'Games - DailyJapJap',
+        test: 'Chapter Tests - DailyJapJap',
+        challenges: 'Challenges - DailyJapJap',
         achievements: 'Achievements - DailyJapJap',
         quests: 'Daily Quests - DailyJapJap',
         exercise: 'Exercises - DailyJapJap',

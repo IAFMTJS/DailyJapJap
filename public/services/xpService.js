@@ -10,13 +10,30 @@ export function resetDailyXP() {
     }
 }
 
-export function addXP(amount, reason = '') {
+export function addXP(amount, reason = '', showAnimation = true) {
     studyStats.totalXP += amount;
     studyStats.dailyXP += amount;
     studyStats.lastXPDate = new Date().toDateString();
     saveStudyStats();
     updateXPDisplay();
     console.log(`+${amount} XP ${reason ? `(${reason})` : ''}`);
+    
+    // Show XP animation if enabled
+    if (showAnimation && window.celebrationService) {
+        // Get XP display element position for animation
+        const xpEl = document.getElementById('headerXP') || document.getElementById('totalXP');
+        if (xpEl) {
+            const rect = xpEl.getBoundingClientRect();
+            window.celebrationService.showXPAnimation(amount, rect.left + rect.width / 2, rect.top);
+        }
+    }
+    
+    // Check for perfect lesson bonus
+    if (reason.includes('Perfect') || reason.includes('perfect')) {
+        if (window.celebrationService) {
+            window.celebrationService.showPerfectLessonCelebration();
+        }
+    }
 }
 
 export function updateXPDisplay() {

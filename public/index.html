@@ -108,6 +108,20 @@
                 </div>
                 <div class="tab-indicator"></div>
             </button>
+            <button class="tab-btn" data-mode="games">
+                <div class="tab-content">
+                    <span class="tab-icon">🎮</span>
+                    <span class="tab-text">Games</span>
+                </div>
+                <div class="tab-indicator"></div>
+            </button>
+            <button class="tab-btn" data-mode="test">
+                <div class="tab-content">
+                    <span class="tab-icon">🧪</span>
+                    <span class="tab-text">Tests</span>
+                </div>
+                <div class="tab-indicator"></div>
+            </button>
             <button class="tab-btn" data-mode="achievements">
                 <div class="tab-content">
                     <span class="tab-icon">🏆</span>
@@ -119,6 +133,13 @@
                 <div class="tab-content">
                     <span class="tab-icon">📋</span>
                     <span class="tab-text">Quests</span>
+                </div>
+                <div class="tab-indicator"></div>
+            </button>
+            <button class="tab-btn" data-mode="challenges">
+                <div class="tab-content">
+                    <span class="tab-icon">💪</span>
+                    <span class="tab-text">Challenges</span>
                 </div>
                 <div class="tab-indicator"></div>
             </button>
@@ -304,6 +325,20 @@
                 </div>
             </div>
 
+            <!-- Games Mode -->
+            <div class="mode-panel" id="gamesMode">
+                <div class="games-container">
+                    <div id="gamesContent"></div>
+                </div>
+            </div>
+
+            <!-- Chapter Test Mode -->
+            <div class="mode-panel" id="testMode">
+                <div class="test-container">
+                    <div id="testContent"></div>
+                </div>
+            </div>
+
             <!-- Exercise Mode (Advanced) -->
             <div class="mode-panel" id="exerciseMode">
                 <div class="exercise-container">
@@ -362,6 +397,13 @@
                         </div>
                     </div>
                     <div class="quests-list" id="questsList"></div>
+                </div>
+            </div>
+
+            <!-- Challenges Mode -->
+            <div class="mode-panel" id="challengesMode">
+                <div class="challenges-container">
+                    <div id="challengesContent"></div>
                 </div>
             </div>
 
@@ -551,6 +593,14 @@
     <!-- Components -->
     <script src="components/audio-player.js"></script>
     <script src="components/matching-exercise.js"></script>
+    
+    <!-- Enhanced Services (Duolingo-like features) -->
+    <script type="module" src="services/streakService.js"></script>
+    <script type="module" src="services/skillStrengthService.js"></script>
+    <script type="module" src="services/celebrationService.js"></script>
+    <script type="module" src="services/chapterService.js"></script>
+    <script type="module" src="services/testService.js"></script>
+    <script type="module" src="services/progressService.js"></script>
     
     <!-- Entry Point -->
     <!-- app-modular.js is replaced by main.js (ES6 module) -->
