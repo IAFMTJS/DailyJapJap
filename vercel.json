@@ -1,17 +1,14 @@
 {
   "version": 2,
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
     {
-      "source": "/api/days",
-      "destination": "/api/days.js"
-    },
-    {
-      "source": "/api/words/:day",
-      "destination": "/api/words/[day].js?day=:day"
-    },
-    {
-      "source": "/api/stats",
-      "destination": "/api/stats.js"
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
     },
     {
       "source": "/(.*)",
