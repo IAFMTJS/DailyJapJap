@@ -9,6 +9,22 @@ const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// API routes must come BEFORE static file serving to avoid conflicts
+// Advanced game mechanics routes
+app.get('/api/exercises', async (req, res) => {
+    console.log('🔵 Exercises route hit:', req.method, req.url, req.query);
+    try {
+        const exercisesHandler = require('./api/exercises');
+        await exercisesHandler(req, res);
+    } catch (error) {
+        console.error('❌ Error in exercises route:', error);
+        res.status(500).json({ error: error.message, stack: error.stack });
+    }
+});
+
+// Serve static files from public directory
+// fallthrough: true (default) ensures that if a file is not found, it passes to the next middleware
 app.use(express.static('public'));
 
 // Cache for extracted data
@@ -206,6 +222,129 @@ app.get('/api/stats', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+
+// New routes for hiragana/katakana and learning plan
+app.get('/api/kana', async (req, res) => {
+    try {
+        const kanaHandler = require('./api/kana');
+        await kanaHandler(req, res);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/learning-plan', async (req, res) => {
+    try {
+        const planHandler = require('./api/learning-plan');
+        await planHandler(req, res);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/achievements', async (req, res) => {
+    try {
+        const achievementsHandler = require('./api/achievements');
+        await achievementsHandler(req, res);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/achievements', async (req, res) => {
+    try {
+        const achievementsHandler = require('./api/achievements');
+        await achievementsHandler(req, res);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/daily-quests', async (req, res) => {
+    try {
+        const questsHandler = require('./api/daily-quests');
+        await questsHandler(req, res);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Exercise session endpoint
+app.get('/api/session', async (req, res) => {
+    try {
+        const sessionHandler = require('./api/session');
+        await sessionHandler(req, res);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/session', async (req, res) => {
+    try {
+        const sessionHandler = require('./api/session');
+        await sessionHandler(req, res);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.put('/api/session', async (req, res) => {
+    try {
+        const sessionHandler = require('./api/session');
+        await sessionHandler(req, res);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/session', async (req, res) => {
+    try {
+        const sessionHandler = require('./api/session');
+        await sessionHandler(req, res);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Exercise validation endpoint
+app.post('/api/exercises', async (req, res) => {
+    try {
+        const exercisesHandler = require('./api/exercises');
+        await exercisesHandler(req, res);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Handle favicon requests (prevent 404 errors)
+app.get('/favicon.ico', (req, res) => {
+    res.status(204).end(); // No content, but successful
+});
+
+// Catch-all handler: serve index.html for all non-API routes
+// This allows the client-side router to handle routing
+// Must be placed AFTER all other routes and static file serving
+app.get('*', (req, res) => {
+    // Don't serve index.html for API routes
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({ error: 'API endpoint not found' });
+    }
+    
+    // Don't serve index.html for static file requests (images, CSS, JS, etc.)
+    // These should be handled by express.static above
+    if (req.path.match(/\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json)$/)) {
+        return res.status(404).send('File not found');
+    }
+    
+    // Serve index.html for all other routes (SPA routing)
+    const indexPath = path.join(__dirname, 'public', 'index.html');
+    res.sendFile(indexPath, (err) => {
+        if (err) {
+            console.error('Error sending index.html:', err);
+            res.status(500).send('Error loading application');
+        }
+    });
 });
 
 // Start server

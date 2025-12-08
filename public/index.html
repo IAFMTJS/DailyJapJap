@@ -29,18 +29,21 @@
                     </div>
                 </div>
                 <div class="header-stats">
-                    <div class="stat-badge">
-                        <div class="stat-icon">📚</div>
-                        <div>
-                            <div class="stat-value" id="totalWords">0</div>
-                            <div class="stat-label">Words</div>
+                    <div class="stat-badge hearts-badge">
+                        <div class="hearts-container" id="heartsContainer">
+                            <span class="heart">❤️</span>
+                            <span class="heart">❤️</span>
+                            <span class="heart">❤️</span>
+                            <span class="heart">❤️</span>
+                            <span class="heart">❤️</span>
                         </div>
+                        <div class="stat-label" id="heartsCount">5/5</div>
                     </div>
-                    <div class="stat-badge">
-                        <div class="stat-icon">📅</div>
+                    <div class="stat-badge xp-badge">
+                        <div class="stat-icon">⭐</div>
                         <div>
-                            <div class="stat-value" id="totalDays">0</div>
-                            <div class="stat-label">Days</div>
+                            <div class="stat-value" id="headerXP">0</div>
+                            <div class="stat-label">XP</div>
                         </div>
                     </div>
                     <div class="stat-badge streak-badge">
@@ -50,16 +53,37 @@
                             <div class="stat-label">Streak</div>
                         </div>
                     </div>
+                    <div class="stat-badge">
+                        <div class="stat-icon">📚</div>
+                        <div>
+                            <div class="stat-value" id="totalWords">0</div>
+                            <div class="stat-label">Words</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
 
         <!-- Premium Navigation -->
         <nav class="mode-tabs">
+            <button class="tab-btn" data-mode="path">
+                <div class="tab-content">
+                    <span class="tab-icon">🗺️</span>
+                    <span class="tab-text">Path</span>
+                </div>
+                <div class="tab-indicator"></div>
+            </button>
             <button class="tab-btn active" data-mode="study">
                 <div class="tab-content">
                     <span class="tab-icon">📖</span>
                     <span class="tab-text">Study</span>
+                </div>
+                <div class="tab-indicator"></div>
+            </button>
+            <button class="tab-btn" data-mode="kana">
+                <div class="tab-content">
+                    <span class="tab-icon">あ</span>
+                    <span class="tab-text">Kana</span>
                 </div>
                 <div class="tab-indicator"></div>
             </button>
@@ -74,6 +98,27 @@
                 <div class="tab-content">
                     <span class="tab-icon">✏️</span>
                     <span class="tab-text">Quiz</span>
+                </div>
+                <div class="tab-indicator"></div>
+            </button>
+            <button class="tab-btn" data-mode="practice">
+                <div class="tab-content">
+                    <span class="tab-icon">💪</span>
+                    <span class="tab-text">Practice</span>
+                </div>
+                <div class="tab-indicator"></div>
+            </button>
+            <button class="tab-btn" data-mode="achievements">
+                <div class="tab-content">
+                    <span class="tab-icon">🏆</span>
+                    <span class="tab-text">Achievements</span>
+                </div>
+                <div class="tab-indicator"></div>
+            </button>
+            <button class="tab-btn" data-mode="quests">
+                <div class="tab-content">
+                    <span class="tab-icon">📋</span>
+                    <span class="tab-text">Quests</span>
                 </div>
                 <div class="tab-indicator"></div>
             </button>
@@ -93,12 +138,46 @@
 
         <!-- Main Content -->
         <main class="main-content">
+            <!-- Learning Path Mode (Skill Tree) -->
+            <div class="mode-panel" id="pathMode">
+                <div class="path-container">
+                    <div class="path-header glass">
+                        <h2 class="section-title">30-Day Japanese Learning Path</h2>
+                    <div class="path-stats">
+                        <div class="path-stat">
+                            <span class="stat-label">Total XP</span>
+                            <span class="stat-number" id="totalXP">0</span>
+                        </div>
+                        <div class="path-stat">
+                            <span class="stat-label">Today's Goal</span>
+                            <div class="goal-progress">
+                                <span class="stat-number" id="dailyXP">0</span> / <span id="dailyGoal">20</span>
+                                <div class="mini-progress-bar">
+                                    <div class="mini-progress-fill" id="dailyGoalProgress"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="path-stat">
+                            <span class="stat-label">Days Completed</span>
+                            <span class="stat-number" id="daysCompleted">0</span> / 30
+                        </div>
+                    </div>
+                    </div>
+                    <div class="skill-tree" id="skillTree">
+                        <div class="loading-state">
+                            <div class="premium-spinner"></div>
+                            <p>Loading your learning path...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Study Mode -->
             <div class="mode-panel active" id="studyMode">
                 <div class="control-panel glass">
                     <div class="day-selector-group">
                         <label class="control-label">Select Learning Day</label>
-                        <select id="daySelect" class="premium-select">
+                        <select id="daySelect" class="premium-select" disabled>
                             <option value="">Loading days...</option>
                         </select>
                         <div class="day-info" id="dayTitle"></div>
@@ -141,7 +220,7 @@
                             <div class="flashcard-front">
                                 <div class="flashcard-japanese" id="flashcardJapanese">こんにちは</div>
                                 <div class="flashcard-furigana" id="flashcardFurigana">konnichiwa</div>
-                                <button class="premium-btn flip-btn" onclick="flipCard()">
+                                <button class="premium-btn flip-btn" onclick="window.flashcardPage?.flipCard()">
                                     <span>👁️</span> Reveal Answer
                                 </button>
                             </div>
@@ -150,22 +229,22 @@
                                 <div class="flashcard-furigana" id="flashcardFuriganaBack">konnichiwa</div>
                                 <div class="flashcard-translation" id="flashcardTranslation">Hello</div>
                                 <div class="flashcard-actions">
-                                    <button class="action-btn wrong-btn" onclick="rateCard(false)">
+                                    <button class="action-btn wrong-btn" onclick="window.flashcardPage?.rateCard(false)">
                                         ❌ Hard
                                     </button>
-                                    <button class="action-btn correct-btn" onclick="rateCard(true)">
+                                    <button class="action-btn correct-btn" onclick="window.flashcardPage?.rateCard(true)">
                                         ✅ Easy
                                     </button>
                                 </div>
-                                <button class="premium-btn flip-btn" onclick="flipCard()">
+                                <button class="premium-btn flip-btn" onclick="window.flashcardPage?.flipCard()">
                                     <span>🔄</span> Flip Back
                                 </button>
                             </div>
                         </div>
                     </div>
                     <div class="flashcard-nav">
-                        <button class="premium-btn nav-btn" onclick="previousCard()">← Previous</button>
-                        <button class="premium-btn nav-btn" onclick="nextCard()">Next →</button>
+                        <button class="premium-btn nav-btn" onclick="window.flashcardPage?.previousCard()">← Previous</button>
+                        <button class="premium-btn nav-btn" onclick="window.flashcardPage?.nextCard()">Next →</button>
                     </div>
                 </div>
             </div>
@@ -195,8 +274,115 @@
                     <div class="quiz-options" id="quizOptions"></div>
                     <div class="quiz-feedback" id="quizFeedback"></div>
                     <div class="quiz-actions">
-                        <button class="premium-btn large" id="startQuizBtn" onclick="startQuiz()">Start Quiz</button>
-                        <button class="premium-btn large" id="nextQuizBtn" onclick="nextQuestion()" style="display:none;">Next Question</button>
+                        <button class="premium-btn large" id="startQuizBtn" onclick="window.quizPage.startQuiz()">Start Quiz</button>
+                        <button class="premium-btn large" id="nextQuizBtn" onclick="window.quizPage.nextQuestion()" style="display:none;">Next Question</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Practice Hub Mode -->
+            <div class="mode-panel" id="practiceMode">
+                <div class="practice-container">
+                    <div class="practice-header glass">
+                        <h2 class="section-title">Practice Hub</h2>
+                        <p class="section-subtitle">Review weak areas and maintain your skills</p>
+                    </div>
+                    <div class="practice-sections">
+                        <div class="practice-section glass">
+                            <h3>🔴 Weak Skills</h3>
+                            <div id="weakSkillsList" class="skills-list"></div>
+                        </div>
+                        <div class="practice-section glass">
+                            <h3>⏰ Due for Review</h3>
+                            <div id="reviewSkillsList" class="skills-list"></div>
+                        </div>
+                        <div class="practice-section glass">
+                            <h3>💪 Strengthen Skills</h3>
+                            <div id="strengthenSkillsList" class="skills-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exercise Mode (Advanced) -->
+            <div class="mode-panel" id="exerciseMode">
+                <div class="exercise-container">
+                    <div class="exercise-header glass">
+                        <div class="exercise-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="exerciseProgress"></div>
+                            </div>
+                            <span id="exerciseCounter">0/10</span>
+                        </div>
+                        <div class="exercise-hearts" id="exerciseHearts">
+                            <span class="heart">❤️</span>
+                            <span class="heart">❤️</span>
+                            <span class="heart">❤️</span>
+                            <span class="heart">❤️</span>
+                            <span class="heart">❤️</span>
+                        </div>
+                    </div>
+                    <div class="exercise-content" id="exerciseContent">
+                        <div class="loading-state">
+                            <div class="premium-spinner"></div>
+                            <p>Loading exercise...</p>
+                        </div>
+                    </div>
+                    <div class="exercise-actions" id="exerciseActions"></div>
+                </div>
+            </div>
+
+            <!-- Achievements Mode -->
+            <div class="mode-panel" id="achievementsMode">
+                <div class="achievements-container">
+                    <div class="achievements-header glass">
+                        <h2 class="section-title">🏆 Achievements</h2>
+                        <div class="achievement-stats">
+                            <div class="stat-item">
+                                <span class="stat-number" id="unlockedCount">0</span>
+                                <span class="stat-label">Unlocked</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number" id="totalAchievements">0</span>
+                                <span class="stat-label">Total</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="achievements-grid" id="achievementsGrid"></div>
+                </div>
+            </div>
+
+            <!-- Daily Quests Mode -->
+            <div class="mode-panel" id="questsMode">
+                <div class="quests-container">
+                    <div class="quests-header glass">
+                        <h2 class="section-title">📋 Daily Quests</h2>
+                        <div class="quest-progress">
+                            <span id="questsCompleted">0</span> / <span id="questsTotal">0</span> completed
+                        </div>
+                    </div>
+                    <div class="quests-list" id="questsList"></div>
+                </div>
+            </div>
+
+            <!-- Kana Learning Mode -->
+            <div class="mode-panel" id="kanaMode">
+                <div class="kana-container">
+                    <div class="kana-header glass">
+                        <h2 class="section-title">Learn Hiragana & Katakana</h2>
+                        <div class="kana-tabs">
+                            <button class="kana-tab-btn active" data-kana-type="hiragana">Hiragana (ひらがな)</button>
+                            <button class="kana-tab-btn" data-kana-type="katakana">Katakana (カタカナ)</button>
+                        </div>
+                        <select id="kanaLessonSelect" class="premium-select">
+                            <option value="">Select a lesson...</option>
+                        </select>
+                    </div>
+                    <div class="kana-content" id="kanaContent">
+                        <div class="loading-state">
+                            <div class="premium-spinner"></div>
+                            <p>Loading kana lessons...</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -236,6 +422,141 @@
         </main>
     </div>
 
-    <script src="app.js"></script>
+    <!-- Celebration Animation -->
+    <div id="celebration" class="celebration hidden">
+        <div class="celebration-content">
+            <div class="celebration-icon">🎉</div>
+            <div class="celebration-text" id="celebrationText">Great job!</div>
+            <div class="celebration-xp" id="celebrationXP">+10 XP</div>
+        </div>
+    </div>
+
+    <!-- Achievement Unlock Modal -->
+    <div id="achievementModal" class="modal hidden">
+        <div class="modal-content achievement-modal">
+            <div class="achievement-icon-large" id="modalAchievementIcon">🏆</div>
+            <h2 id="modalAchievementName">Achievement Unlocked!</h2>
+            <p id="modalAchievementDesc">You've earned an achievement</p>
+            <div class="achievement-xp">+<span id="modalAchievementXP">0</span> XP</div>
+            <button class="premium-btn" onclick="closeAchievementModal()">Awesome!</button>
+        </div>
+    </div>
+
+    <!-- Fallback inline script to ensure basic functionality -->
+    <script>
+        // Global error handler
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error, e.message, e.filename, e.lineno);
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled promise rejection:', e.reason);
+        });
+        
+        // Immediate fallback to ensure UI is responsive
+        console.log('HTML loaded, setting up basic event listeners...');
+        
+        // Set up tab switching immediately (before modules load)
+        function setupBasicListeners() {
+            console.log('Setting up basic listeners...');
+            
+            // Basic tab switching
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            console.log('Found', tabButtons.length, 'tab buttons');
+            
+            tabButtons.forEach((btn, index) => {
+                // Remove existing listeners
+                const newBtn = btn.cloneNode(true);
+                btn.parentNode.replaceChild(newBtn, btn);
+                
+                newBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const mode = this.dataset.mode;
+                    console.log('Tab clicked:', mode, 'Index:', index);
+                    
+                    try {
+                        // Update tab buttons
+                        document.querySelectorAll('.tab-btn').forEach(b => {
+                            b.classList.remove('active');
+                            if (b.dataset.mode === mode) {
+                                b.classList.add('active');
+                            }
+                        });
+                        
+                        // Update panels
+                        document.querySelectorAll('.mode-panel').forEach(panel => {
+                            panel.classList.remove('active');
+                            if (panel.id === mode + 'Mode') {
+                                panel.classList.add('active');
+                            }
+                        });
+                        
+                        // Try to call module function if available
+                        if (window.app && window.app.switchMode) {
+                            window.app.switchMode(mode);
+                        }
+                    } catch (err) {
+                        console.error('Error in tab click handler:', err);
+                    }
+                });
+            });
+            
+            // Basic day selector
+            const daySelect = document.getElementById('daySelect');
+            if (daySelect) {
+                console.log('Setting up day selector');
+                const newSelect = daySelect.cloneNode(true);
+                daySelect.parentNode.replaceChild(newSelect, daySelect);
+                
+                newSelect.addEventListener('change', function(e) {
+                    const value = e.target.value;
+                    console.log('Day selected:', value);
+                    if (value && window.studyPage && window.studyPage.loadWords) {
+                        window.studyPage.loadWords(parseInt(value));
+                    }
+                });
+                
+                // Enable the dropdown
+                newSelect.disabled = false;
+            }
+            
+            console.log('Basic event listeners set up successfully');
+        }
+        
+        // Run immediately if DOM is ready, otherwise wait
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', setupBasicListeners);
+        } else {
+            setupBasicListeners();
+        }
+    </script>
+    
+    <script type="module" src="main.js" onerror="console.error('Failed to load main.js'); alert('Failed to load main application. Check console (F12) for errors.');"></script>
+    <!-- Core Modules (load first) -->
+    <script src="modules/core/state-manager.js"></script>
+    <script src="modules/core/event-bus.js"></script>
+    <script src="modules/core/api-client.js"></script>
+    <script src="modules/core/app-manager.js"></script>
+    
+    <!-- Utilities -->
+    <script src="utils/helpers.js"></script>
+    
+    <!-- Feature Modules -->
+    <script src="modules/path/path-module.js"></script>
+    <script src="modules/exercise/exercise-module.js"></script>
+    <script src="modules/study/study-module.js"></script>
+    <script src="modules/flashcards/flashcards-module.js"></script>
+    
+    <!-- Components -->
+    <script src="components/audio-player.js"></script>
+    <script src="components/matching-exercise.js"></script>
+    
+    <!-- Entry Point -->
+    <!-- app-modular.js is replaced by main.js (ES6 module) -->
+    <!-- <script src="app-modular.js"></script> -->
+    
+    <!-- Legacy app.js (commented out - uncomment if needed during migration) -->
+    <!-- <script src="app.js"></script> -->
 </body>
 </html>
