@@ -82,6 +82,42 @@ function renderGamesHub() {
                         <span>High Score: ${getHighScore('context-guess')}</span>
                     </div>
                 </div>
+                
+                <div class="game-card" onclick="window.gamesPage.startGame('combo-game')">
+                    <div class="game-icon">🔥</div>
+                    <h3>Combo Chain</h3>
+                    <p>Chain correct answers for massive combos!</p>
+                    <div class="game-stats">
+                        <span>High Score: ${getHighScore('combo-game')}</span>
+                    </div>
+                </div>
+                
+                <div class="game-card" onclick="window.gamesPage.startGame('speed-typing')">
+                    <div class="game-icon">⌨️</div>
+                    <h3>Speed Typing</h3>
+                    <p>Type Japanese words as fast as you can!</p>
+                    <div class="game-stats">
+                        <span>High Score: ${getHighScore('speed-typing')}</span>
+                    </div>
+                </div>
+                
+                <div class="game-card" onclick="window.gamesPage.startGame('word-association')">
+                    <div class="game-icon">🔗</div>
+                    <h3>Word Association</h3>
+                    <p>Connect related Japanese words</p>
+                    <div class="game-stats">
+                        <span>High Score: ${getHighScore('word-association')}</span>
+                    </div>
+                </div>
+                
+                <div class="game-card" onclick="window.gamesPage.startGame('sentence-completion')">
+                    <div class="game-icon">✍️</div>
+                    <h3>Sentence Completion</h3>
+                    <p>Complete anime sentences correctly</p>
+                    <div class="game-stats">
+                        <span>High Score: ${getHighScore('sentence-completion')}</span>
+                    </div>
+                </div>
             </div>
         </div>
     `;
@@ -144,6 +180,18 @@ export async function startGame(gameType) {
                 break;
             case 'context-guess':
                 startContextGuessGame();
+                break;
+            case 'combo-game':
+                startComboGame();
+                break;
+            case 'speed-typing':
+                startSpeedTypingGame();
+                break;
+            case 'word-association':
+                startWordAssociationGame();
+                break;
+            case 'sentence-completion':
+                startSentenceCompletionGame();
                 break;
             default:
                 showError('Unknown game type');
@@ -792,6 +840,404 @@ function startContextGuessGame() {
         } else {
             if (window.celebrationService) {
                 window.celebrationService.celebrate('Not quite', 'error', 1000);
+            }
+        }
+        
+        setTimeout(() => {
+            currentRound++;
+            renderRound();
+        }, 1500);
+    };
+    
+    renderRound();
+}
+
+// Combo Game - Chain correct answers for massive combos
+function startComboGame() {
+    const gamesContent = document.getElementById('gamesContent');
+    if (!gamesContent) return;
+    
+    let currentWordIndex = 0;
+    let combo = 0;
+    let maxCombo = 0;
+    let timeLeft = 60; // 60 seconds
+    let timerInterval = null;
+    
+    function updateComboDisplay() {
+        const comboDisplay = document.getElementById('comboDisplay');
+        if (comboDisplay) {
+            comboDisplay.innerHTML = `
+                <div class="combo-counter">
+                    <span class="combo-label">🔥 COMBO</span>
+                    <span class="combo-value">${combo}</span>
+                    <span class="combo-multiplier">x${Math.floor(combo / 5) + 1}</span>
+                </div>
+            `;
+        }
+    }
+    
+    function showComboAnimation() {
+        if (combo > 0 && combo % 5 === 0) {
+            const comboText = document.createElement('div');
+            comboText.className = 'combo-display';
+            comboText.innerHTML = `<div class="combo-text">${combo} COMBO!</div>`;
+            document.body.appendChild(comboText);
+            setTimeout(() => comboText.remove(), 1000);
+        }
+    }
+    
+    function renderRound() {
+        if (timeLeft <= 0 || currentWordIndex >= gameWords.length) {
+            clearInterval(timerInterval);
+            endGame('combo-game', gameScore);
+            return;
+        }
+        
+        const word = gameWords[currentWordIndex];
+        const wrongOptions = shuffleArray(gameWords.filter(w => w.japanese !== word.japanese)).slice(0, 3);
+        const allOptions = shuffleArray([word.translation, ...wrongOptions.map(w => w.translation)]);
+        
+        gamesContent.innerHTML = `
+            <div class="game-container">
+                <div class="game-header">
+                    <h2>🔥 Combo Chain</h2>
+                    <div class="game-score">Score: ${gameScore}</div>
+                    <div class="game-timer">⏱️ ${timeLeft}s</div>
+                </div>
+                
+                <div id="comboDisplay"></div>
+                
+                <div class="combo-game">
+                    <div class="japanese-word-display">
+                        <div class="japanese-text-large">${escapeHtml(word.japanese)}</div>
+                        ${word.furigana ? `<div class="furigana-text">${escapeHtml(word.furigana)}</div>` : ''}
+                    </div>
+                    
+                    <div class="match-options">
+                        ${allOptions.map((option, idx) => `
+                            <button class="match-option" onclick="window.gamesPage.selectComboAnswer('${escapeHtml(option)}', '${escapeHtml(word.translation)}', ${currentWordIndex})">
+                                ${escapeHtml(option)}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        updateComboDisplay();
+    }
+    
+    // Start timer
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        const timerEl = document.querySelector('.game-timer');
+        if (timerEl) timerEl.textContent = `⏱️ ${timeLeft}s`;
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            renderRound();
+        }
+    }, 1000);
+    
+    window.gamesPage.selectComboAnswer = (selected, correct, roundIndex) => {
+        if (roundIndex !== currentWordIndex) return;
+        
+        const isCorrect = selected === correct;
+        if (isCorrect) {
+            combo++;
+            maxCombo = Math.max(maxCombo, combo);
+            const multiplier = Math.floor(combo / 5) + 1;
+            gameScore += 10 * multiplier;
+            
+            showComboAnimation();
+            updateComboDisplay();
+            
+            if (window.celebrationService) {
+                window.celebrationService.celebrate(`+${10 * multiplier} (${combo} combo!)`, 'success', 1000);
+            }
+        } else {
+            combo = 0;
+            updateComboDisplay();
+            if (window.celebrationService) {
+                window.celebrationService.celebrate('Combo broken!', 'error', 1000);
+            }
+        }
+        
+        setTimeout(() => {
+            currentWordIndex++;
+            renderRound();
+        }, 1500);
+    };
+    
+    renderRound();
+}
+
+// Speed Typing Game
+function startSpeedTypingGame() {
+    const gamesContent = document.getElementById('gamesContent');
+    if (!gamesContent) return;
+    
+    let currentWordIndex = 0;
+    let correctTypings = 0;
+    let startTime = Date.now();
+    let userInput = '';
+    
+    function renderRound() {
+        if (currentWordIndex >= 20 || currentWordIndex >= gameWords.length) {
+            const timeElapsed = Math.floor((Date.now() - startTime) / 1000);
+            const wpm = Math.round((correctTypings / timeElapsed) * 60);
+            gameScore = correctTypings * 10 + wpm;
+            endGame('speed-typing', gameScore);
+            return;
+        }
+        
+        const word = gameWords[currentWordIndex];
+        userInput = '';
+        
+        gamesContent.innerHTML = `
+            <div class="game-container">
+                <div class="game-header">
+                    <h2>⌨️ Speed Typing</h2>
+                    <div class="game-score">Score: ${gameScore}</div>
+                    <div class="game-progress">Word ${currentWordIndex + 1} / 20</div>
+                </div>
+                
+                <div class="speed-typing-game">
+                    <div class="word-to-type">
+                        <div class="japanese-text-large">${escapeHtml(word.japanese)}</div>
+                        <div class="word-translation">${escapeHtml(word.translation)}</div>
+                        ${word.furigana ? `<div class="furigana-text">${escapeHtml(word.furigana)}</div>` : ''}
+                    </div>
+                    
+                    <div class="typing-input-container">
+                        <input type="text" id="typingInput" class="typing-input" placeholder="Type the Japanese word..." autofocus>
+                        <div class="typing-hint">Type: <strong>${escapeHtml(word.japanese)}</strong></div>
+                    </div>
+                    
+                    <div class="typing-stats">
+                        <div>Correct: ${correctTypings}</div>
+                        <div>Time: ${Math.floor((Date.now() - startTime) / 1000)}s</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const input = document.getElementById('typingInput');
+        if (input) {
+            input.addEventListener('input', (e) => {
+                userInput = e.target.value;
+                if (userInput === word.japanese) {
+                    correctTypings++;
+                    gameScore += 10;
+                    if (window.celebrationService) {
+                        window.celebrationService.celebrate('Correct!', 'success', 500);
+                    }
+                    setTimeout(() => {
+                        currentWordIndex++;
+                        renderRound();
+                    }, 500);
+                }
+            });
+            
+            input.focus();
+        }
+    }
+    
+    renderRound();
+}
+
+// Word Association Game
+function startWordAssociationGame() {
+    const gamesContent = document.getElementById('gamesContent');
+    if (!gamesContent) return;
+    
+    let currentRound = 0;
+    let correctAssociations = 0;
+    const maxRounds = 10;
+    
+    // Create word associations
+    const associations = [
+        { word: '食べ物', translation: 'food', related: ['ご飯', 'お茶', '果物'] },
+        { word: '学校', translation: 'school', related: ['学生', '先生', '勉強'] },
+        { word: '家族', translation: 'family', related: ['父', '母', '兄弟'] },
+        { word: '時間', translation: 'time', related: ['朝', '昼', '夜'] },
+        { word: '色', translation: 'color', related: ['赤', '青', '緑'] }
+    ];
+    
+    function renderRound() {
+        if (currentRound >= maxRounds || currentRound >= associations.length) {
+            endGame('word-association', gameScore);
+            return;
+        }
+        
+        const association = associations[currentRound % associations.length];
+        const allWords = shuffleArray([...association.related, ...gameWords.slice(0, 5).map(w => w.japanese)]);
+        const correctWords = association.related;
+        
+        gamesContent.innerHTML = `
+            <div class="game-container">
+                <div class="game-header">
+                    <h2>🔗 Word Association</h2>
+                    <div class="game-score">Score: ${gameScore}</div>
+                    <div class="game-progress">Round ${currentRound + 1} / ${maxRounds}</div>
+                </div>
+                
+                <div class="word-association-game">
+                    <div class="association-prompt">
+                        <h3>Find words related to:</h3>
+                        <div class="japanese-text-large">${escapeHtml(association.word)}</div>
+                        <div class="word-translation">${escapeHtml(association.translation)}</div>
+                    </div>
+                    
+                    <div class="association-words">
+                        ${allWords.map((word, idx) => {
+                            const isCorrect = correctWords.includes(word);
+                            return `
+                                <button class="association-word" 
+                                    onclick="window.gamesPage.selectAssociation('${escapeHtml(word)}', ${isCorrect}, ${currentRound})">
+                                    ${escapeHtml(word)}
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+                    
+                    <div class="selected-words" id="selectedWords">
+                        <p>Selected: <span id="selectedCount">0</span> / ${correctWords.length}</p>
+                    </div>
+                    
+                    <button class="premium-btn primary" onclick="window.gamesPage.checkAssociation(${currentRound}, ${correctWords.length})">
+                        Check
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        window.gamesPage.selectedAssociations = [];
+    }
+    
+    window.gamesPage.selectAssociation = (word, isCorrect, roundIndex) => {
+        if (roundIndex !== currentRound) return;
+        
+        const selected = window.gamesPage.selectedAssociations || [];
+        if (selected.includes(word)) {
+            window.gamesPage.selectedAssociations = selected.filter(w => w !== word);
+        } else {
+            window.gamesPage.selectedAssociations = [...selected, word];
+        }
+        
+        const countEl = document.getElementById('selectedCount');
+        if (countEl) countEl.textContent = window.gamesPage.selectedAssociations.length;
+    };
+    
+    window.gamesPage.checkAssociation = (roundIndex, correctCount) => {
+        if (roundIndex !== currentRound) return;
+        
+        const selected = window.gamesPage.selectedAssociations || [];
+        const correct = associations[currentRound % associations.length].related;
+        const selectedCorrect = selected.filter(w => correct.includes(w)).length;
+        
+        if (selectedCorrect === correctCount && selected.length === correctCount) {
+            gameScore += 20;
+            correctAssociations++;
+            if (window.celebrationService) {
+                window.celebrationService.celebrate('Perfect!', 'success', 1000);
+            }
+        } else {
+            if (window.celebrationService) {
+                window.celebrationService.celebrate('Try again!', 'error', 1000);
+            }
+        }
+        
+        setTimeout(() => {
+            currentRound++;
+            renderRound();
+        }, 1500);
+    };
+    
+    renderRound();
+}
+
+// Sentence Completion Game
+function startSentenceCompletionGame() {
+    const gamesContent = document.getElementById('gamesContent');
+    if (!gamesContent) return;
+    
+    // Use anime sentences if available
+    let animeSentences = [];
+    if (window.animeSentenceService) {
+        animeSentences = window.animeSentenceService.getAnimeSentences(null, 20);
+    }
+    
+    // Fallback sentences
+    const fallbackSentences = [
+        { japanese: 'こんにちは、___ですか？', translation: 'Hello, how are you?', missing: '元気', options: ['元気', '時間', '学校'] },
+        { japanese: '今日はいい___ですね', translation: 'The weather is nice today', missing: '天気', options: ['天気', '時間', '食べ物'] },
+        { japanese: '___ございます', translation: 'Thank you very much', missing: 'ありがとう', options: ['ありがとう', 'おはよう', 'おやすみ'] },
+        { japanese: '___ございます', translation: 'Good morning', missing: 'おはよう', options: ['おはよう', 'ありがとう', 'おやすみ'] }
+    ];
+    
+    const sentences = animeSentences.length > 0 ? animeSentences.map(s => ({
+        japanese: s.japanese.replace(/\w+/g, '___'),
+        translation: s.translation,
+        missing: s.japanese.split(' ')[0],
+        options: [s.japanese.split(' ')[0], ...gameWords.slice(0, 3).map(w => w.japanese)]
+    })) : fallbackSentences;
+    
+    let currentRound = 0;
+    let correctCompletions = 0;
+    const maxRounds = Math.min(10, sentences.length);
+    
+    function renderRound() {
+        if (currentRound >= maxRounds) {
+            endGame('sentence-completion', gameScore);
+            return;
+        }
+        
+        const sentence = sentences[currentRound];
+        const shuffledOptions = shuffleArray(sentence.options);
+        
+        gamesContent.innerHTML = `
+            <div class="game-container">
+                <div class="game-header">
+                    <h2>✍️ Sentence Completion</h2>
+                    <div class="game-score">Score: ${gameScore}</div>
+                    <div class="game-progress">Round ${currentRound + 1} / ${maxRounds}</div>
+                </div>
+                
+                <div class="sentence-completion-game">
+                    <div class="sentence-display">
+                        <div class="anime-sentence-card">
+                            <div class="anime-sentence-japanese">${escapeHtml(sentence.japanese)}</div>
+                            <div class="anime-sentence-translation">${escapeHtml(sentence.translation)}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="completion-options">
+                        <h3>Complete the sentence:</h3>
+                        ${shuffledOptions.map((option, idx) => `
+                            <button class="completion-option" 
+                                onclick="window.gamesPage.selectCompletion('${escapeHtml(option)}', '${escapeHtml(sentence.missing)}', ${currentRound})">
+                                ${escapeHtml(option)}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    window.gamesPage.selectCompletion = (selected, correct, roundIndex) => {
+        if (roundIndex !== currentRound) return;
+        
+        const isCorrect = selected === correct;
+        if (isCorrect) {
+            gameScore += 15;
+            correctCompletions++;
+            if (window.celebrationService) {
+                window.celebrationService.celebrate('Perfect!', 'success', 1000);
+            }
+        } else {
+            if (window.celebrationService) {
+                window.celebrationService.celebrate('Wrong!', 'error', 1000);
             }
         }
         

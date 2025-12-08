@@ -140,6 +140,31 @@ async function initializeApp() {
             window.skillStrengthService.updateAllSkillStrengths();
         }
         
+        // Initialize mascot service
+        if (window.mascotService) {
+            // Mascot will auto-initialize on DOMContentLoaded
+            console.log('Mascot service available');
+        }
+        
+        // Setup mascot event listeners
+        if (window.eventBus && window.mascotService) {
+            window.eventBus.on('exercise-correct', () => {
+                window.mascotService.reactToAction('correct');
+            });
+            window.eventBus.on('exercise-wrong', () => {
+                window.mascotService.reactToAction('wrong');
+            });
+            window.eventBus.on('level-up', () => {
+                window.mascotService.reactToAction('levelUp');
+            });
+            window.eventBus.on('achievement-unlocked', () => {
+                window.mascotService.reactToAction('achievement');
+            });
+            window.eventBus.on('streak-updated', () => {
+                window.mascotService.reactToAction('streak');
+            });
+        }
+        
         // Sync studyStats with StateManager for compatibility (if available)
         if (window.stateManager) {
             syncStudyStatsToStateManager();

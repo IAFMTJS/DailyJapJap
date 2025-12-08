@@ -235,7 +235,32 @@ function renderExercise(exercise) {
                 </div>
             `;
         case 'translation':
+            // Try to get anime sentence context if available
+            let animeContext = null;
+            if (window.animeSentenceService && exercise.word) {
+                const sentences = window.animeSentenceService.getAnimeSentences();
+                const matchingSentence = sentences.find(s => 
+                    s.japanese.includes(exercise.word.japanese) || 
+                    exercise.word.japanese.includes(s.japanese.split(' ')[0])
+                );
+                if (matchingSentence) {
+                    animeContext = matchingSentence;
+                }
+            }
+            
             return `
+                ${animeContext ? `
+                    <div class="anime-sentence-card">
+                        <div class="anime-context">
+                            <span class="anime-character">${escapeHtml(animeContext.character)}</span>
+                            <span>•</span>
+                            <span class="anime-scene">${escapeHtml(animeContext.context)}</span>
+                        </div>
+                        <div class="anime-sentence-japanese">${escapeHtml(animeContext.japanese)}</div>
+                        ${animeContext.furigana ? `<div class="anime-sentence-furigana">${escapeHtml(animeContext.furigana)}</div>` : ''}
+                        <div class="anime-sentence-translation">${escapeHtml(animeContext.translation)}</div>
+                    </div>
+                ` : ''}
                 <div class="exercise-question">
                     <h3>${escapeHtml(exercise.question)}</h3>
                     ${exercise.questionAudio ? `
