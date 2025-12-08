@@ -322,6 +322,20 @@ app.get('/favicon.ico', (req, res) => {
     res.status(204).end(); // No content, but successful
 });
 
+// Service Worker - must be served with correct MIME type
+app.get('/sw.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.sendFile(path.join(__dirname, 'public', 'sw.js'));
+});
+
+// Manifest - must be served with correct MIME type
+app.get('/manifest.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/manifest+json');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.sendFile(path.join(__dirname, 'public', 'manifest.json'));
+});
+
 // Catch-all handler: serve index.html for all non-API routes
 // This allows the client-side router to handle routing
 // Must be placed AFTER all other routes and static file serving

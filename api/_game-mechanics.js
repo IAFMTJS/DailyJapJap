@@ -14,6 +14,23 @@ const ACHIEVEMENTS = {
     xp_5000: { id: 'xp_5000', name: 'XP Master', description: 'Earn 5000 total XP', icon: '🌟', xp: 200 },
     daily_goal_7: { id: 'daily_goal_7', name: 'Consistent Learner', description: 'Complete daily goal 7 days in a row', icon: '📅', xp: 75 },
     perfect_week: { id: 'perfect_week', name: 'Perfect Week', description: 'Complete all daily goals in a week', icon: '✨', xp: 100 },
+    // Anime-themed achievements
+    anime_fan: { id: 'anime_fan', name: 'Anime Fan', description: 'Complete your first story', icon: '📖', xp: 50 },
+    manga_reader: { id: 'manga_reader', name: 'Manga Reader', description: 'Complete 3 stories', icon: '📚', xp: 150 },
+    otaku: { id: 'otaku', name: 'Otaku', description: 'Complete all stories', icon: '🎌', xp: 300 },
+    game_master: { id: 'game_master', name: 'Game Master', description: 'Play all 6 games', icon: '🎮', xp: 100 },
+    speed_king: { id: 'speed_king', name: 'Speed King', description: 'Get high score in Speed Challenge', icon: '⚡', xp: 75 },
+    memory_champion: { id: 'memory_champion', name: 'Memory Champion', description: 'Perfect score in Memory Game', icon: '🧠', xp: 80 },
+    chapter_master: { id: 'chapter_master', name: 'Chapter Master', description: 'Complete all 10 chapters', icon: '👑', xp: 500 },
+    test_ace: { id: 'test_ace', name: 'Test Ace', description: 'Pass 5 chapter tests with 100%', icon: '💯', xp: 200 },
+    challenge_completer: { id: 'challenge_completer', name: 'Challenge Completer', description: 'Complete 10 daily challenges', icon: '💪', xp: 150 },
+    weekly_warrior: { id: 'weekly_warrior', name: 'Weekly Warrior', description: 'Complete all weekly challenges', icon: '🏆', xp: 250 },
+    anime_sensei: { id: 'anime_sensei', name: 'Anime Sensei', description: 'Master 500 words', icon: '🎓', xp: 400 },
+    legendary_learner: { id: 'legendary_learner', name: 'Legendary Learner', description: 'Reach level 50', icon: '🌟', xp: 500 },
+    story_teller: { id: 'story_teller', name: 'Story Teller', description: 'Complete 5 stories', icon: '📖', xp: 200 },
+    character_expert: { id: 'character_expert', name: 'Character Expert', description: 'Perfect score in Character Quiz', icon: '👤', xp: 90 },
+    context_master: { id: 'context_master', name: 'Context Master', description: 'Perfect score in Context Guess', icon: '🎬', xp: 95 },
+    sentence_builder: { id: 'sentence_builder', name: 'Sentence Builder', description: 'Perfect score in Sentence Builder', icon: '🧩', xp: 85 },
 };
 
 const DAILY_QUESTS = [

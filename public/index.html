@@ -2,8 +2,23 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="description" content="Learn Japanese through anime-themed games, stories, and interactive lessons">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DailyJapJap">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>🇯🇵 Daily Japanese - Advanced Learning Platform</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512x512.png">
+    
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -140,6 +155,13 @@
                 <div class="tab-content">
                     <span class="tab-icon">💪</span>
                     <span class="tab-text">Challenges</span>
+                </div>
+                <div class="tab-indicator"></div>
+            </button>
+            <button class="tab-btn" data-mode="story">
+                <div class="tab-content">
+                    <span class="tab-icon">📖</span>
+                    <span class="tab-text">Stories</span>
                 </div>
                 <div class="tab-indicator"></div>
             </button>
@@ -407,6 +429,13 @@
                 </div>
             </div>
 
+            <!-- Story Mode -->
+            <div class="mode-panel" id="storyMode">
+                <div class="story-container">
+                    <div id="storyContent"></div>
+                </div>
+            </div>
+
             <!-- Kana Learning Mode -->
             <div class="mode-panel" id="kanaMode">
                 <div class="kana-container">
@@ -601,6 +630,38 @@
     <script type="module" src="services/chapterService.js"></script>
     <script type="module" src="services/testService.js"></script>
     <script type="module" src="services/progressService.js"></script>
+    
+    <!-- PWA Install Handler -->
+    <script src="pwa-install.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('Service Worker registered:', registration.scope);
+                        
+                        // Check for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New service worker available
+                                    console.log('New service worker available');
+                                    if (confirm('A new version is available! Reload to update?')) {
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
     
     <!-- Entry Point -->
     <!-- app-modular.js is replaced by main.js (ES6 module) -->

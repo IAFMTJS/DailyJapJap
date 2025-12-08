@@ -21,6 +21,7 @@ import * as statsPage from './pages/StatsPage.js';
 import * as gamesPage from './pages/GamesPage.js';
 import * as chapterTestPage from './pages/ChapterTestPage.js';
 import * as challengesPage from './pages/ChallengesPage.js';
+import * as storyPage from './pages/StoryPage.js';
 
 // Global state
 let currentMode = 'study'; // Changed from 'path' to 'study' to avoid auto-loading learning path
@@ -37,6 +38,7 @@ const routeMap = {
     '/games': 'games',
     '/test': 'test',
     '/challenges': 'challenges',
+    '/story': 'story',
     '/achievements': 'achievements',
     '/quests': 'quests',
     '/exercise': 'exercise',
@@ -73,6 +75,7 @@ const pages = {
     games: gamesPage,
     test: chapterTestPage,
     challenges: challengesPage,
+    story: storyPage,
     achievements: achievementsPage,
     quests: questsPage,
     exercise: exercisePage,
@@ -639,6 +642,7 @@ function updatePageTitle(mode) {
         games: 'Games - DailyJapJap',
         test: 'Chapter Tests - DailyJapJap',
         challenges: 'Challenges - DailyJapJap',
+        story: 'Stories - DailyJapJap',
         achievements: 'Achievements - DailyJapJap',
         quests: 'Daily Quests - DailyJapJap',
         exercise: 'Exercises - DailyJapJap',
