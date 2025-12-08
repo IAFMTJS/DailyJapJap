@@ -486,25 +486,52 @@ function speakJapanese(text, options = {}) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'ja-JP';
     utterance.rate = options.speed || 0.8;
-    utterance.pitch = 1;
+    utterance.pitch = options.pitch || 1.1; // Slightly higher pitch for female voice
     utterance.volume = 1;
     
+    // Get all voices
     const voices = window.speechSynthesis.getVoices();
-    let japaneseVoice = voices.find(voice => 
+    
+    // Filter Japanese voices
+    const japaneseVoices = voices.filter(voice => 
         voice.lang === 'ja-JP' || 
         voice.lang === 'ja' ||
-        voice.lang.startsWith('ja-')
+        voice.lang.startsWith('ja-') ||
+        voice.name.toLowerCase().includes('japanese') ||
+        voice.name.toLowerCase().includes('japan')
     );
     
+    // Prefer female Japanese voices (iOS typically has "Kyoko" or voices with "female" in name)
+    let japaneseVoice = japaneseVoices.find(voice => {
+        const name = voice.name.toLowerCase();
+        return name.includes('kyoko') || 
+               name.includes('female') || 
+               name.includes('woman') ||
+               name.includes('女') ||
+               (voice.gender && voice.gender === 'female');
+    });
+    
+    // If no female voice found, prefer voices that sound more natural
     if (!japaneseVoice) {
-        japaneseVoice = voices.find(voice => 
-            voice.name.toLowerCase().includes('japanese') ||
-            voice.name.toLowerCase().includes('japan')
+        // iOS voices: Kyoko, O-Ren, Yuna, etc.
+        japaneseVoice = japaneseVoices.find(voice => 
+            voice.name.toLowerCase().includes('kyoko') ||
+            voice.name.toLowerCase().includes('o-ren') ||
+            voice.name.toLowerCase().includes('yuna') ||
+            voice.name.toLowerCase().includes('samantha') // Sometimes available
         );
+    }
+    
+    // Fallback to any Japanese voice
+    if (!japaneseVoice && japaneseVoices.length > 0) {
+        japaneseVoice = japaneseVoices[0];
     }
     
     if (japaneseVoice) {
         utterance.voice = japaneseVoice;
+        console.log('Using Japanese voice:', japaneseVoice.name, japaneseVoice.lang);
+    } else {
+        console.warn('No Japanese voice found, using default');
     }
     
     utterance.onerror = (event) => {
@@ -515,11 +542,87 @@ function speakJapanese(text, options = {}) {
     if (options.onStart) utterance.onstart = options.onStart;
     if (options.onEnd) utterance.onend = options.onEnd;
     
-    window.speechSynthesis.speak(utterance);
+    // iOS workaround: ensure voices are loaded
+    if (voices.length === 0) {
+        window.speechSynthesis.onvoiceschanged = () => {
+            const newVoices = window.speechSynthesis.getVoices();
+            const jpVoices = newVoices.filter(v => 
+                v.lang.startsWith('ja') || v.name.toLowerCase().includes('japanese')
+            );
+            const femaleVoice = jpVoices.find(v => 
+                v.name.toLowerCase().includes('kyoko') || 
+                v.name.toLowerCase().includes('female')
+            );
+            if (femaleVoice) utterance.voice = femaleVoice;
+            else if (jpVoices.length > 0) utterance.voice = jpVoices[0];
+            window.speechSynthesis.speak(utterance);
+        };
+        // Fallback timeout for iOS
+        setTimeout(() => {
+            window.speechSynthesis.speak(utterance);
+        }, 500);
+    } else {
+        window.speechSynthesis.speak(utterance);
+    }
 }
 
 // Make speakJapanese globally available
 window.speakJapanese = speakJapanese;
+
+// Preload Japanese voices for better iOS compatibility
+if ('speechSynthesis' in window) {
+    let voicesLoaded = false;
+    let japaneseFemaleVoice = null;
+    
+    const loadJapaneseVoices = () => {
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length === 0) return;
+        
+        voicesLoaded = true;
+        const japaneseVoices = voices.filter(voice => 
+            voice.lang === 'ja-JP' || 
+            voice.lang === 'ja' ||
+            voice.lang.startsWith('ja-') ||
+            voice.name.toLowerCase().includes('japanese') ||
+            voice.name.toLowerCase().includes('japan')
+        );
+        
+        // Find female Japanese voice
+        japaneseFemaleVoice = japaneseVoices.find(voice => {
+            const name = voice.name.toLowerCase();
+            return name.includes('kyoko') || 
+                   name.includes('female') || 
+                   name.includes('woman') ||
+                   name.includes('女') ||
+                   (voice.gender && voice.gender === 'female');
+        });
+        
+        // Log available voices for debugging
+        if (japaneseVoices.length > 0) {
+            console.log('Japanese voices available:', japaneseVoices.map(v => v.name));
+            if (japaneseFemaleVoice) {
+                console.log('Using female Japanese voice:', japaneseFemaleVoice.name);
+            }
+        }
+    };
+    
+    // Load voices immediately if available
+    loadJapaneseVoices();
+    
+    // Also listen for voice changes (important for iOS)
+    window.speechSynthesis.onvoiceschanged = loadJapaneseVoices;
+    
+    // iOS workaround: trigger voice loading by creating a dummy utterance
+    if (!voicesLoaded) {
+        setTimeout(() => {
+            const dummyUtterance = new SpeechSynthesisUtterance('');
+            dummyUtterance.volume = 0;
+            window.speechSynthesis.speak(dummyUtterance);
+            window.speechSynthesis.cancel();
+            loadJapaneseVoices();
+        }, 100);
+    }
+}
 
 // Sync studyStats to StateManager (for compatibility)
 function syncStudyStatsToStateManager() {
