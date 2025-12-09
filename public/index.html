@@ -14,10 +14,9 @@
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
     
-    <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512x512.png">
+    <!-- Apple Touch Icons (using favicon as fallback) -->
+    <link rel="apple-touch-icon" href="/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -259,30 +258,9 @@
                         </div>
                     </div>
                     <div class="flashcard-wrapper" id="flashcardWrapper">
-                        <div class="premium-flashcard" id="flashcard">
-                            <div class="flashcard-front">
-                                <div class="flashcard-japanese" id="flashcardJapanese">こんにちは</div>
-                                <div class="flashcard-furigana" id="flashcardFurigana">konnichiwa</div>
-                                <button class="premium-btn flip-btn" onclick="window.flashcardPage?.flipCard()">
-                                    <span>👁️</span> Reveal Answer
-                                </button>
-                            </div>
-                            <div class="flashcard-back">
-                                <div class="flashcard-japanese" id="flashcardJapaneseBack">こんにちは</div>
-                                <div class="flashcard-furigana" id="flashcardFuriganaBack">konnichiwa</div>
-                                <div class="flashcard-translation" id="flashcardTranslation">Hello</div>
-                                <div class="flashcard-actions">
-                                    <button class="action-btn wrong-btn" onclick="window.flashcardPage?.rateCard(false)">
-                                        ❌ Hard
-                                    </button>
-                                    <button class="action-btn correct-btn" onclick="window.flashcardPage?.rateCard(true)">
-                                        ✅ Easy
-                                    </button>
-                                </div>
-                                <button class="premium-btn flip-btn" onclick="window.flashcardPage?.flipCard()">
-                                    <span>🔄</span> Flip Back
-                                </button>
-                            </div>
+                        <div class="loading-state">
+                            <div class="premium-spinner"></div>
+                            <p>Loading flashcards...</p>
                         </div>
                     </div>
                     <div class="flashcard-nav">
@@ -611,7 +589,7 @@
     <script src="modules/core/app-manager.js"></script>
     
     <!-- Utilities -->
-    <script src="utils/helpers.js"></script>
+    <script type="module" src="utils/helpers.js"></script>
     
     <!-- Feature Modules -->
     <script src="modules/path/path-module.js"></script>

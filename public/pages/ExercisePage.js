@@ -264,7 +264,7 @@ function renderExercise(exercise) {
                 <div class="exercise-question">
                     <h3>${escapeHtml(exercise.question)}</h3>
                     ${exercise.questionAudio ? `
-                        <button class="premium-btn audio-btn" onclick="speakJapanese('${escapeHtml(exercise.questionAudio)}')">
+                        <button class="premium-btn audio-btn" onclick="window.speakJapanese && window.speakJapanese('${escapeHtml(exercise.questionAudio)}')">
                             🔊 Play Audio
                         </button>
                     ` : ''}

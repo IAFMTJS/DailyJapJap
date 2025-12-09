@@ -31,11 +31,11 @@ export function renderWords(words) {
                 ${showFurigana && word.furigana ? `<div class="word-furigana">${escapeHtml(word.furigana)}</div>` : ''}
                 ${showTranslation ? `<div class="word-translation">${escapeHtml(word.translation)}</div>` : ''}
                 <div class="audio-controls">
-                    <button class="btn btn-primary" onclick="speakJapanese('${escapeHtml(word.japanese)}')">
+                    <button class="btn btn-primary" onclick="window.speakJapanese && window.speakJapanese('${escapeHtml(word.japanese)}')">
                         🔊 Speak
                     </button>
                     ${word.sentence ? `
-                        <button class="btn btn-secondary" onclick="speakJapanese('${escapeHtml(word.sentence)}')">
+                        <button class="btn btn-secondary" onclick="window.speakJapanese && window.speakJapanese('${escapeHtml(word.sentence)}')">
                             🔊 Sentence
                         </button>
                     ` : ''}

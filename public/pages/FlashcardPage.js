@@ -238,6 +238,11 @@ export function showFlashcard() {
                 <div class="flashcard-front">
                     <div class="flashcard-japanese" id="flashcardJapanese"></div>
                     <div class="flashcard-furigana" id="flashcardFurigana"></div>
+                    <div class="flashcard-audio">
+                        <button class="premium-btn audio-btn" id="flashcardAudioBtn" onclick="window.flashcardPage?.playAudio()">
+                            🔊 Play Audio
+                        </button>
+                    </div>
                     <button class="premium-btn flip-btn" onclick="window.flashcardPage?.flipCard()">
                         <span>👁️</span> Reveal Answer
                     </button>
@@ -246,6 +251,11 @@ export function showFlashcard() {
                     <div class="flashcard-japanese" id="flashcardJapaneseBack"></div>
                     <div class="flashcard-furigana" id="flashcardFuriganaBack"></div>
                     <div class="flashcard-translation" id="flashcardTranslation"></div>
+                    <div class="flashcard-audio">
+                        <button class="premium-btn audio-btn" id="flashcardAudioBtnBack" onclick="window.flashcardPage?.playAudio()">
+                            🔊 Play Audio
+                        </button>
+                    </div>
                     <div class="flashcard-actions">
                         <button class="action-btn wrong-btn" onclick="window.flashcardPage?.rateCard(false)">
                             ❌ Hard
@@ -399,6 +409,23 @@ export function rateCard(isEasy) {
     }, 500);
 }
 
+export function playAudio() {
+    if (flashcardWords.length === 0 || !flashcardWords[currentFlashcardIndex]) {
+        console.error('No card to play audio for');
+        return;
+    }
+    
+    const card = flashcardWords[currentFlashcardIndex];
+    if (card && card.japanese) {
+        if (window.speakJapanese) {
+            window.speakJapanese(card.japanese);
+        } else {
+            console.error('speakJapanese function not available');
+            alert('Audio is not available. Please refresh the page.');
+        }
+    }
+}
+
 // Export for global access
-window.flashcardPage = { init, load, showFlashcard, flipCard, nextCard, previousCard, rateCard };
+window.flashcardPage = { init, load, showFlashcard, flipCard, nextCard, previousCard, rateCard, playAudio };
 

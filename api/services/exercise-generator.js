@@ -18,10 +18,19 @@ class ExerciseGenerator {
         
         try {
             const wordsData = await extractPdfContent();
+            
+            // Check for errors
+            if (wordsData.error) {
+                console.error(`[ExerciseGenerator] PDF extraction error: ${wordsData.error}`);
+                this.wordBank = [];
+                return [];
+            }
+            
             this.wordBank = Object.values(wordsData).flatMap(day => day.words || []);
             return this.wordBank;
         } catch (error) {
-            console.error('Error loading word bank:', error);
+            console.error('[ExerciseGenerator] Error loading word bank:', error);
+            this.wordBank = [];
             return [];
         }
     }
@@ -35,49 +44,62 @@ class ExerciseGenerator {
      * @returns {Promise<Array>} Array of exercises
      */
     async generateExerciseSet(skillId, count = 10, difficulty = 1, type = null) {
-        await this.initializeWordBank();
-        
-        const exercises = [];
-        const words = await this.getWordsForSkill(skillId);
-        
-        console.log(`[ExerciseGenerator] skillId=${skillId}, words.length=${words?.length || 0}, count=${count}`);
-        
-        if (!words || words.length === 0) {
-            console.error(`[ExerciseGenerator] No words found for skillId: ${skillId}`);
-            return exercises;
-        }
-        
-        const exerciseTypes = this.getExerciseTypesForDifficulty(difficulty, type);
-        
-        // Reset history if it gets too large
-        if (this.exerciseHistory.size > 100) {
-            this.exerciseHistory.clear();
-        }
-        
-        for (let i = 0; i < count; i++) {
-            const word = this.selectWord(words, exercises);
-            if (!word) {
-                console.warn(`[ExerciseGenerator] No word available at index ${i}, breaking`);
-                break; // No more words available
+        try {
+            await this.initializeWordBank();
+            
+            const exercises = [];
+            const words = await this.getWordsForSkill(skillId);
+            
+            console.log(`[ExerciseGenerator] skillId=${skillId}, words.length=${words?.length || 0}, count=${count}`);
+            
+            if (!words || words.length === 0) {
+                console.error(`[ExerciseGenerator] No words found for skillId: ${skillId}`);
+                return exercises;
             }
             
-            const exerciseType = this.selectExerciseType(exerciseTypes, i);
-            try {
-                const exercise = await this.generateExercise(word, exerciseType, difficulty, skillId);
-                
-                if (exercise) {
-                    exercises.push(exercise);
-                    this.exerciseHistory.add(word.japanese);
-                } else {
-                    console.warn(`[ExerciseGenerator] Failed to generate exercise for word: ${word.japanese || word.char}`);
-                }
-            } catch (exError) {
-                console.error(`[ExerciseGenerator] Error generating exercise:`, exError);
+            const exerciseTypes = this.getExerciseTypesForDifficulty(difficulty, type);
+            
+            if (!exerciseTypes || exerciseTypes.length === 0) {
+                console.error(`[ExerciseGenerator] No exercise types available for difficulty ${difficulty}`);
+                return exercises;
             }
+            
+            // Reset history if it gets too large
+            if (this.exerciseHistory.size > 100) {
+                this.exerciseHistory.clear();
+            }
+            
+            for (let i = 0; i < count; i++) {
+                const word = this.selectWord(words, exercises);
+                if (!word) {
+                    console.warn(`[ExerciseGenerator] No word available at index ${i}, breaking`);
+                    break; // No more words available
+                }
+                
+                const exerciseType = this.selectExerciseType(exerciseTypes, i);
+                try {
+                    const exercise = await this.generateExercise(word, exerciseType, difficulty, skillId);
+                    
+                    if (exercise) {
+                        exercises.push(exercise);
+                        this.exerciseHistory.add(word.japanese);
+                    } else {
+                        console.warn(`[ExerciseGenerator] Failed to generate exercise for word: ${word.japanese || word.char}`);
+                    }
+                } catch (exError) {
+                    console.error(`[ExerciseGenerator] Error generating exercise at index ${i}:`, exError);
+                    console.error(`[ExerciseGenerator] Stack:`, exError.stack);
+                    // Continue to next exercise instead of failing completely
+                }
+            }
+            
+            console.log(`[ExerciseGenerator] Generated ${exercises.length} exercises`);
+            return exercises;
+        } catch (error) {
+            console.error(`[ExerciseGenerator] Fatal error in generateExerciseSet:`, error);
+            console.error(`[ExerciseGenerator] Stack:`, error.stack);
+            throw error; // Re-throw to be caught by API handler
         }
-        
-        console.log(`[ExerciseGenerator] Generated ${exercises.length} exercises`);
-        return exercises;
     }
     
     /**
@@ -89,6 +111,18 @@ class ExerciseGenerator {
         if (skillId.startsWith('day-')) {
             const dayNum = parseInt(skillId.replace('day-', ''));
             const wordsData = await extractPdfContent();
+            
+            // Check for errors
+            if (wordsData.error) {
+                console.error(`[ExerciseGenerator] PDF extraction error: ${wordsData.error}`);
+                return [];
+            }
+            
+            if (!wordsData[dayNum]) {
+                console.warn(`[ExerciseGenerator] Day ${dayNum} not found in words data`);
+                return [];
+            }
+            
             return wordsData[dayNum]?.words || [];
         }
         
@@ -205,35 +239,50 @@ class ExerciseGenerator {
      * Generate multiple choice exercise
      */
     async generateMultipleChoice(word, difficulty) {
-        const direction = Math.random() > 0.5 ? 'jp_to_en' : 'en_to_jp';
-        const isJapanese = direction === 'en_to_jp';
-        
-        const correctAnswer = isJapanese ? word.japanese : word.translation;
-        const distractors = await distractorGenerator.generateDistractors(
-            word,
-            3,
-            isJapanese ? 'japanese' : 'translation'
-        );
-        
-        const options = [correctAnswer, ...distractors];
-        const shuffled = this.shuffleWithTracking(options, 0);
-        
-        return {
-            id: `ex_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-            type: 'multiple_choice',
-            direction: direction,
-            question: direction === 'jp_to_en'
-                ? `What does ${word.japanese} mean?`
-                : `How do you say "${word.translation}" in Japanese?`,
-            questionAudio: word.japanese,
-            correctAnswer: correctAnswer,
-            options: shuffled.array,
-            correctIndex: shuffled.correctIndex,
-            explanation: `${word.japanese}${word.furigana ? ` (${word.furigana})` : ''} means "${word.translation}"`,
-            difficulty: difficulty,
-            points: 10,
-            word: word
-        };
+        try {
+            const direction = Math.random() > 0.5 ? 'jp_to_en' : 'en_to_jp';
+            const isJapanese = direction === 'en_to_jp';
+            
+            const correctAnswer = isJapanese ? word.japanese : word.translation;
+            
+            let distractors = [];
+            try {
+                distractors = await distractorGenerator.generateDistractors(
+                    word,
+                    3,
+                    isJapanese ? 'japanese' : 'translation'
+                );
+            } catch (distError) {
+                console.warn(`[ExerciseGenerator] Error generating distractors, using fallback:`, distError);
+                // Fallback distractors
+                distractors = isJapanese 
+                    ? ['あ', 'い', 'う'] 
+                    : ['hello', 'goodbye', 'thanks'];
+            }
+            
+            const options = [correctAnswer, ...distractors];
+            const shuffled = this.shuffleWithTracking(options, 0);
+            
+            return {
+                id: `ex_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                type: 'multiple_choice',
+                direction: direction,
+                question: direction === 'jp_to_en'
+                    ? `What does ${word.japanese} mean?`
+                    : `How do you say "${word.translation}" in Japanese?`,
+                questionAudio: word.japanese,
+                correctAnswer: correctAnswer,
+                options: shuffled.array,
+                correctIndex: shuffled.correctIndex,
+                explanation: `${word.japanese}${word.furigana ? ` (${word.furigana})` : ''} means "${word.translation}"`,
+                difficulty: difficulty,
+                points: 10,
+                word: word
+            };
+        } catch (error) {
+            console.error(`[ExerciseGenerator] Error in generateMultipleChoice:`, error);
+            throw error;
+        }
     }
     
     /**

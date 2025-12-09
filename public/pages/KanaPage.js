@@ -93,7 +93,7 @@ async function loadKanaLesson(day, type) {
                         <div class="kana-card" data-char="${char.char}" data-romaji="${char.romaji}">
                             <div class="kana-char">${char.char}</div>
                             <div class="kana-romaji">${char.romaji}</div>
-                            <button class="premium-btn small" onclick="speakJapanese('${char.romaji}')">🔊</button>
+                            <button class="premium-btn small" onclick="window.speakJapanese && window.speakJapanese('${char.char}')">🔊</button>
                         </div>
                     `).join('')}
                 </div>

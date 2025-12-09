@@ -27,6 +27,13 @@ class DistractorGenerator {
     async loadWordBank() {
         try {
             const wordsData = await extractPdfContent();
+            
+            // Check for errors
+            if (wordsData.error) {
+                console.error(`[DistractorGenerator] PDF extraction error: ${wordsData.error}`);
+                return [];
+            }
+            
             const allWords = Object.values(wordsData).flatMap(day => day.words || []);
             return allWords;
         } catch (error) {

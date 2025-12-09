@@ -9,6 +9,12 @@ const exerciseSession = require('./services/exercise-session');
 // Learning plan generator
 async function getLearningPlan() {
     const wordsData = await extractPdfContent();
+    
+    // Check for errors
+    if (wordsData.error) {
+        throw new Error(wordsData.error);
+    }
+    
     const totalDays = Object.keys(wordsData).length;
     const vocabDays = 30 - 14;
     const wordsPerDay = Math.ceil(500 / vocabDays);
@@ -68,8 +74,41 @@ module.exports = async (req, res) => {
             return res.status(200).end();
         }
         
-        const path = req.url.split('?')[0]; // Remove query string
+        // Ensure we haven't already sent a response
+        if (res.headersSent) {
+            return;
+        }
+        
+        // Handle both Express req.path and req.url
+        // Express req.path doesn't include query string, req.url does
+        let path = req.path;
+        if (!path) {
+            // Fallback: parse from req.url
+            path = req.url.split('?')[0];
+        }
+        // Normalize path (remove trailing slash, ensure it starts with /)
+        path = path.replace(/\/$/, '') || '/';
+        if (!path.startsWith('/')) {
+            path = '/' + path;
+        }
+        
         const method = req.method;
+        
+        // Health check endpoint
+        if (path === '/api/health' || path === '/health') {
+            return res.json({ 
+                status: 'ok', 
+                timestamp: new Date().toISOString(),
+                modules: {
+                    extractPdfContent: typeof extractPdfContent === 'function',
+                    exerciseGenerator: typeof exerciseGenerator === 'object',
+                    answerValidator: typeof answerValidator === 'object',
+                    exerciseSession: typeof exerciseSession === 'object'
+                }
+            });
+        }
+        
+        console.log(`[API] ${method} ${path}`, { query: req.query, originalUrl: req.originalUrl, url: req.url });
         
         // Route: /api/days
         if (path === '/api/days' || path === '/days') {
@@ -149,7 +188,17 @@ module.exports = async (req, res) => {
                     }
                     return res.status(404).json({ error: 'Hiragana lesson not found' });
                 }
-                return res.json({ hiragana: getAllHiragana() });
+                // Return lessons structure for selector
+                return res.json({ 
+                    hiragana: {
+                        characters: getAllHiragana(),
+                        lessons: hiraganaLessons
+                    },
+                    katakana: {
+                        characters: getAllKatakana(),
+                        lessons: katakanaLessons
+                    }
+                });
             }
             
             if (type === 'katakana') {
@@ -166,24 +215,55 @@ module.exports = async (req, res) => {
                     }
                     return res.status(404).json({ error: 'Katakana lesson not found' });
                 }
-                return res.json({ katakana: getAllKatakana() });
+                // Return lessons structure for selector
+                return res.json({ 
+                    hiragana: {
+                        characters: getAllHiragana(),
+                        lessons: hiraganaLessons
+                    },
+                    katakana: {
+                        characters: getAllKatakana(),
+                        lessons: katakanaLessons
+                    }
+                });
             }
             
+            // Default: return both with lessons structure
             return res.json({
-                hiragana: getAllHiragana(),
-                katakana: getAllKatakana()
+                hiragana: {
+                    characters: getAllHiragana(),
+                    lessons: hiraganaLessons
+                },
+                katakana: {
+                    characters: getAllKatakana(),
+                    lessons: katakanaLessons
+                }
             });
         }
         
         // Route: /api/learning-plan
         if (path === '/api/learning-plan' || path === '/learning-plan') {
-            const plan = await getLearningPlan();
-            return res.json({ plan });
+            try {
+                console.log('[API Learning Plan] Generating learning plan...');
+                const plan = await getLearningPlan();
+                console.log(`[API Learning Plan] Generated plan with ${plan?.length || 0} items`);
+                return res.json({ plan });
+            } catch (planError) {
+                console.error('[API Learning Plan] Error:', planError);
+                console.error('[API Learning Plan] Stack:', planError.stack);
+                return res.status(500).json({ 
+                    error: 'Failed to generate learning plan',
+                    details: planError.message,
+                    stack: process.env.NODE_ENV === 'development' ? planError.stack : undefined
+                });
+            }
         }
         
         // Route: /api/exercises
         if (path === '/api/exercises' || path === '/exercises') {
             const { type, skillId, difficulty = 1, exerciseType, count = 10, action } = req.query;
+            
+            console.log(`[API Exercises] type=${type}, skillId=${skillId}, count=${count}, difficulty=${difficulty}`);
             
             if (action === 'test') {
                 return res.json({ 
@@ -202,15 +282,48 @@ module.exports = async (req, res) => {
             
             if (type === 'vocabulary' || type === 'kana') {
                 const skill = skillId || (type === 'kana' ? 'kana' : 'vocab');
-                const exercises = exerciseGenerator.generateExercises({
-                    type: type,
-                    skillId: skill,
-                    difficulty: parseInt(difficulty),
-                    exerciseType: exerciseType,
-                    count: parseInt(count)
-                });
                 
-                return res.json({ exercises });
+                console.log(`[API Exercises] Generating exercises for skill: ${skill}, type: ${type}, count: ${count}`);
+                
+                try {
+                    // Validate inputs
+                    const exerciseCount = parseInt(count) || 10;
+                    const exerciseDifficulty = parseInt(difficulty) || 1;
+                    
+                    if (!exerciseGenerator || typeof exerciseGenerator.generateExerciseSet !== 'function') {
+                        throw new Error('Exercise generator not properly initialized');
+                    }
+                    
+                    const exercises = await exerciseGenerator.generateExerciseSet(
+                        skill,
+                        exerciseCount,
+                        exerciseDifficulty,
+                        exerciseType || null
+                    );
+                    
+                    console.log(`[API Exercises] Generated ${exercises?.length || 0} exercises`);
+                    
+                    if (!exercises || exercises.length === 0) {
+                        console.warn(`[API Exercises] No exercises generated for skillId: ${skill}, type: ${type}`);
+                        return res.status(404).json({ 
+                            error: 'No exercises available',
+                            details: `Could not generate exercises for skillId: ${skill}, type: ${type}. This might mean there are no words available for this skill.`
+                        });
+                    }
+                    
+                    return res.json({ exercises });
+                } catch (exError) {
+                    console.error('[API Exercises] Error generating exercises:', exError);
+                    console.error('[API Exercises] Error message:', exError.message);
+                    console.error('[API Exercises] Stack:', exError.stack);
+                    return res.status(500).json({ 
+                        error: 'Failed to generate exercises',
+                        details: exError.message,
+                        skillId: skill,
+                        type: type,
+                        stack: process.env.NODE_ENV === 'development' ? exError.stack : undefined
+                    });
+                }
             }
             
             return res.status(400).json({ error: 'Invalid exercise type' });

@@ -7,19 +7,60 @@ const pdf = require('pdf-parse');
 const app = express();
 const PORT = 3000;
 
+// Global error handlers to prevent server crashes
+process.on('uncaughtException', (error) => {
+    console.error('❌ Uncaught Exception:', error);
+    console.error('Stack:', error.stack);
+    // Don't exit - log and continue
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ Unhandled Rejection at:', promise);
+    console.error('Reason:', reason);
+    // Don't exit - log and continue
+});
+
 app.use(cors());
 app.use(express.json());
 
 // API routes must come BEFORE static file serving to avoid conflicts
-// Advanced game mechanics routes
-app.get('/api/exercises', async (req, res) => {
-    console.log('🔵 Exercises route hit:', req.method, req.url, req.query);
+// Use consolidated API handler for all routes
+let apiHandler;
+try {
+    apiHandler = require('./api/index.js');
+    console.log('✅ API handler loaded successfully');
+} catch (error) {
+    console.error('❌ Failed to load API handler:', error);
+    console.error('Stack:', error.stack);
+    // Create a fallback handler that returns errors
+    apiHandler = async (req, res) => {
+        res.status(500).json({ 
+            error: 'API handler failed to load',
+            details: error.message 
+        });
+    };
+}
+
+// Route all API requests to the consolidated handler
+app.all('/api/*', async (req, res) => {
     try {
-        const exercisesHandler = require('./api/exercises');
-        await exercisesHandler(req, res);
+        console.log(`[Server] API Request: ${req.method} ${req.path || req.url}`);
+        await apiHandler(req, res);
     } catch (error) {
-        console.error('❌ Error in exercises route:', error);
-        res.status(500).json({ error: error.message, stack: error.stack });
+        console.error('❌ API Error:', error);
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Stack:', error.stack);
+        // Ensure we always send a response
+        if (!res.headersSent) {
+            try {
+                res.status(500).json({ 
+                    error: error.message || 'Internal server error',
+                    details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+                });
+            } catch (sendError) {
+                console.error('❌ Failed to send error response:', sendError);
+            }
+        }
     }
 });
 
@@ -155,167 +196,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.get('/api/days', async (req, res) => {
-    try {
-        const data = await extractPdfContent();
-        if (data.error) {
-            return res.status(500).json(data);
-        }
-
-        const daysList = [];
-        for (const dayNum of Object.keys(data).sort((a, b) => parseInt(a) - parseInt(b))) {
-            const dayInfo = data[dayNum];
-            daysList.push({
-                day: parseInt(dayNum),
-                title: dayInfo.title || "",
-                wordCount: dayInfo.words ? dayInfo.words.length : 0
-            });
-        }
-
-        res.json({ days: daysList });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.get('/api/words/:day', async (req, res) => {
-    try {
-        const day = parseInt(req.params.day);
-        const data = await extractPdfContent();
-        
-        if (data.error) {
-            return res.status(500).json(data);
-        }
-
-        if (!data[day]) {
-            return res.status(404).json({ error: `Day ${day} not found` });
-        }
-
-        const dayInfo = data[day];
-        res.json({
-            day: day,
-            title: dayInfo.title || "",
-            words: dayInfo.words || []
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.get('/api/stats', async (req, res) => {
-    try {
-        const data = await extractPdfContent();
-        if (data.error) {
-            return res.status(500).json(data);
-        }
-
-        const totalWords = Object.values(data).reduce((sum, dayInfo) => {
-            return sum + (dayInfo.words ? dayInfo.words.length : 0);
-        }, 0);
-        const totalDays = Object.keys(data).length;
-
-        res.json({
-            totalDays: totalDays,
-            totalWords: totalWords,
-            averageWordsPerDay: totalDays > 0 ? Math.round(totalWords / totalDays * 10) / 10 : 0
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// New routes for hiragana/katakana and learning plan
-app.get('/api/kana', async (req, res) => {
-    try {
-        const kanaHandler = require('./api/kana');
-        await kanaHandler(req, res);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.get('/api/learning-plan', async (req, res) => {
-    try {
-        const planHandler = require('./api/learning-plan');
-        await planHandler(req, res);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.get('/api/achievements', async (req, res) => {
-    try {
-        const achievementsHandler = require('./api/achievements');
-        await achievementsHandler(req, res);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.post('/api/achievements', async (req, res) => {
-    try {
-        const achievementsHandler = require('./api/achievements');
-        await achievementsHandler(req, res);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.get('/api/daily-quests', async (req, res) => {
-    try {
-        const questsHandler = require('./api/daily-quests');
-        await questsHandler(req, res);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Exercise session endpoint
-app.get('/api/session', async (req, res) => {
-    try {
-        const sessionHandler = require('./api/session');
-        await sessionHandler(req, res);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.post('/api/session', async (req, res) => {
-    try {
-        const sessionHandler = require('./api/session');
-        await sessionHandler(req, res);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.put('/api/session', async (req, res) => {
-    try {
-        const sessionHandler = require('./api/session');
-        await sessionHandler(req, res);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.delete('/api/session', async (req, res) => {
-    try {
-        const sessionHandler = require('./api/session');
-        await sessionHandler(req, res);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Exercise validation endpoint
-app.post('/api/exercises', async (req, res) => {
-    try {
-        const exercisesHandler = require('./api/exercises');
-        await exercisesHandler(req, res);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+// All API routes are now handled by the consolidated handler above
 
 // Handle favicon requests (prevent 404 errors)
 app.get('/favicon.ico', (req, res) => {
@@ -365,7 +246,29 @@ app.get('*', (req, res) => {
 app.listen(PORT, async () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log('📚 Extracting PDF content...');
-    await extractPdfContent();
-    console.log('✅ Ready to serve!');
+    try {
+        await extractPdfContent();
+        console.log('✅ Ready to serve!');
+    } catch (error) {
+        console.error('⚠️ Warning: PDF extraction failed on startup:', error.message);
+        console.error('Server will continue, but some features may not work until PDF is available.');
+        console.log('✅ Server running (with warnings)');
+    }
+});
+
+// Handle server errors gracefully
+app.on('error', (error) => {
+    console.error('❌ Server error:', error);
+});
+
+// Keep server alive even on errors
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully...');
+    process.exit(0);
+});
+
+process.on('SIGINT', () => {
+    console.log('SIGINT received, shutting down gracefully...');
+    process.exit(0);
 });
 

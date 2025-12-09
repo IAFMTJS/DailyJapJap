@@ -233,7 +233,7 @@ function startWordMatchGame() {
                     <div class="japanese-word-display">
                         <div class="japanese-text-large">${escapeHtml(word.japanese)}</div>
                         ${word.furigana ? `<div class="furigana-text">${escapeHtml(word.furigana)}</div>` : ''}
-                        <button class="premium-btn audio-btn" onclick="speakJapanese('${escapeHtml(word.japanese)}')">
+                        <button class="premium-btn audio-btn" onclick="window.speakJapanese && window.speakJapanese('${escapeHtml(word.japanese)}')">
                             🔊 Listen
                         </button>
                     </div>
@@ -317,7 +317,7 @@ function startSentenceBuilderGame() {
                 <div class="sentence-builder-game">
                     <div class="sentence-display">
                         <div class="japanese-sentence">${escapeHtml(template.japanese)}</div>
-                        <button class="premium-btn audio-btn" onclick="speakJapanese('${escapeHtml(template.japanese)}')">
+                        <button class="premium-btn audio-btn" onclick="window.speakJapanese && window.speakJapanese('${escapeHtml(template.japanese)}')">
                             🔊 Listen
                         </button>
                     </div>
@@ -641,7 +641,7 @@ function startCharacterQuiz() {
                         <div class="character-context">${escapeHtml(question.context)}</div>
                         <div class="japanese-word-display">
                             <div class="japanese-text-large">${escapeHtml(question.word)}</div>
-                            <button class="premium-btn audio-btn" onclick="speakJapanese('${escapeHtml(question.word)}')">
+                            <button class="premium-btn audio-btn" onclick="window.speakJapanese && window.speakJapanese('${escapeHtml(question.word)}')">
                                 🔊 Listen
                             </button>
                         </div>
@@ -806,7 +806,7 @@ function startContextGuessGame() {
                     
                     <div class="context-sentence">
                         <div class="japanese-sentence">${escapeHtml(sentenceWithBlank)}</div>
-                        <button class="premium-btn audio-btn" onclick="speakJapanese('${escapeHtml(scenario.sentence)}')">
+                        <button class="premium-btn audio-btn" onclick="window.speakJapanese && window.speakJapanese('${escapeHtml(scenario.sentence)}')">
                             🔊 Listen
                         </button>
                     </div>
