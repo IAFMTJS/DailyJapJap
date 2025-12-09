@@ -46,33 +46,89 @@ export function renderWords(words) {
     }).join('');
     
     // Add event listeners for audio buttons using event delegation
-    wordGrid.querySelectorAll('.audio-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const wordIndex = parseInt(this.getAttribute('data-word-index'));
-            const audioType = this.getAttribute('data-audio-type');
-            if (wordIndex >= 0 && wordIndex < words.length && window.speakJapanese) {
-                const word = words[wordIndex];
-                const textToSpeak = audioType === 'sentence' && word.sentence ? word.sentence : word.japanese;
+    // Use event delegation on the parent container to handle dynamically created buttons
+    wordGrid.addEventListener('click', function(e) {
+        const audioBtn = e.target.closest('.audio-btn');
+        if (!audioBtn) return;
+        
+        const wordIndex = parseInt(audioBtn.getAttribute('data-word-index'));
+        const audioType = audioBtn.getAttribute('data-audio-type');
+        
+        if (wordIndex >= 0 && wordIndex < currentDayWords.length) {
+            const word = currentDayWords[wordIndex];
+            const textToSpeak = audioType === 'sentence' && word.sentence ? word.sentence : word.japanese;
+            
+            console.log('Playing audio for:', textToSpeak, 'Type:', audioType);
+            
+            if (window.speakJapanese) {
                 window.speakJapanese(textToSpeak);
+            } else {
+                console.error('speakJapanese function not available');
             }
-        });
-    });
-    
-    // Mark words as studied when viewed
-    words.forEach((word, index) => {
-        const wordId = `${currentDay}-${index}`;
-        studyStats.wordsStudied.add(wordId);
-        if (window.xpService) {
-            window.xpService.addXP(1, 'Studied word');
         }
     });
     
-    // Update day progress
-    const progress = (studyStats.wordsStudied.size / words.length) * 100;
-    if (window.pathPage) {
+    // Mark words as studied when viewed (only if not already studied)
+    let newWordsStudied = 0;
+    words.forEach((word, index) => {
+        const wordId = `${currentDay}-${index}`;
+        if (!studyStats.wordsStudied.has(wordId)) {
+            studyStats.wordsStudied.add(wordId);
+            newWordsStudied++;
+            if (window.xpService) {
+                window.xpService.addXP(1, 'Studied word', false); // Don't show animation for each word
+            }
+        }
+    });
+    
+    // Show XP animation once for all new words
+    if (newWordsStudied > 0 && window.xpService) {
+        window.xpService.addXP(newWordsStudied, `Studied ${newWordsStudied} word${newWordsStudied > 1 ? 's' : ''}`);
+    }
+    
+    // Calculate progress for THIS DAY only
+    const dayWordIds = words.map((_, index) => `${currentDay}-${index}`);
+    const studiedInDay = dayWordIds.filter(id => studyStats.wordsStudied.has(id)).length;
+    const progress = words.length > 0 ? (studiedInDay / words.length) * 100 : 0;
+    
+    // Update day progress in studyStats
+    studyStats.dayProgress[currentDay] = {
+        studied: studiedInDay,
+        total: words.length,
+        progress: progress,
+        lastStudied: new Date().toISOString()
+    };
+    
+    // Update path page if available
+    if (window.pathPage && typeof window.pathPage.updateDayProgress === 'function') {
         window.pathPage.updateDayProgress(currentDay, progress);
     }
+    
+    // Save stats
     saveStudyStats();
+    
+    // Update progress display on study page if it exists
+    const progressDisplay = document.getElementById('dayProgressDisplay');
+    const progressEl = document.getElementById('dayProgress');
+    if (progressEl) {
+        progressEl.textContent = `${studiedInDay}/${words.length} words studied (${Math.round(progress)}%)`;
+    }
+    
+    // Show progress display
+    if (progressDisplay) {
+        progressDisplay.style.display = 'block';
+    }
+    
+    // Update progress bar if it exists
+    const progressBar = document.getElementById('dayProgressBar');
+    if (progressBar) {
+        const progressFill = progressBar.querySelector('.progress-fill');
+        if (progressFill) {
+            progressFill.style.width = `${progress}%`;
+        }
+    }
+    
+    console.log(`Day ${currentDay} progress: ${studiedInDay}/${words.length} (${Math.round(progress)}%)`);
 }
 
 export function getAllDaysData() {

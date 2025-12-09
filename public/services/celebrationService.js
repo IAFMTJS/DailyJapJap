@@ -216,12 +216,17 @@ class CelebrationService {
     }
     
     showXPAnimation(container, message, xp) {
+        // Ensure container is a valid DOM element
+        if (!container || typeof container.appendChild !== 'function') {
+            container = document.body;
+        }
+        
         const xpBadge = document.createElement('div');
         xpBadge.className = 'celebration-xp';
         xpBadge.innerHTML = `
             <div class="xp-icon">⭐</div>
-            <div class="xp-amount">+${xp} XP</div>
-            ${message ? `<div class="xp-message">${message}</div>` : ''}
+            <div class="xp-amount">+${xp || message || '0'} XP</div>
+            ${message && message !== `+${xp} XP` ? `<div class="xp-message">${message}</div>` : ''}
         `;
         xpBadge.style.cssText = `
             position: fixed;

@@ -20,12 +20,11 @@ export function addXP(amount, reason = '', showAnimation = true) {
     
     // Show XP animation if enabled
     if (showAnimation && window.celebrationService) {
-        // Get XP display element position for animation
-        const xpEl = document.getElementById('headerXP') || document.getElementById('totalXP');
-        if (xpEl) {
-            const rect = xpEl.getBoundingClientRect();
-            window.celebrationService.showXPAnimation(amount, rect.left + rect.width / 2, rect.top);
-        }
+        // Use celebrate method with proper parameters
+        window.celebrationService.celebrate('xp', `+${amount} XP`, { 
+            xp: amount,
+            container: document.body
+        });
     }
     
     // Check for perfect lesson bonus

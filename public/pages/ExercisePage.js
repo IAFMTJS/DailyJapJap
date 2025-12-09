@@ -212,6 +212,26 @@ async function showNextExercise() {
         if (currentExercise.type === 'word_order') {
             initializeWordOrderExercise();
         }
+        
+        // Set up event listeners for writing exercises
+        if (currentExercise.type === 'write') {
+            setTimeout(() => {
+                const writingInput = document.getElementById('writingInput');
+                if (writingInput) {
+                    writingInput.addEventListener('input', onWritingInput);
+                    writingInput.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            checkAnswer();
+                        }
+                    });
+                }
+                
+                const hintBtn = document.querySelector('.hint-btn');
+                if (hintBtn) {
+                    hintBtn.addEventListener('click', showHint);
+                }
+            }, 100);
+        }
     }
     
     if (exerciseActions) {
@@ -399,8 +419,7 @@ function renderExercise(exercise) {
                                    spellcheck="false"
                                    ${isJapanese ? 'lang="ja"' : ''}
                                    ${isJapanese ? 'ime-mode: active;' : ''}
-                                   onkeypress="if(event.key==='Enter') window.exercisePage.checkAnswer()"
-                                   oninput="window.exercisePage.onWritingInput(event)">
+                                   id="writingInput">
                             ${isJapanese ? `
                                 <div class="ime-hint">
                                     💡 Tip: Enable Japanese IME (Input Method Editor) in your system settings to type Japanese characters
@@ -409,7 +428,7 @@ function renderExercise(exercise) {
                         </div>
                         ${exercise.hint ? `
                             <div class="writing-hint">
-                                <button class="hint-btn" onclick="window.exercisePage.showHint()">
+                                <button class="hint-btn" id="hintBtn">
                                     💡 Show Hint
                                 </button>
                                 <div class="hint-content" id="hintContent" style="display: none;">
@@ -1135,6 +1154,68 @@ export function resetWordOrder() {
     
     // Re-initialize drag and drop
     initializeWordOrderExercise();
+}
+
+export function onWritingInput(event) {
+    const input = event.target;
+    const feedback = document.getElementById('writingFeedback');
+    
+    if (!feedback || !currentExercise || currentExercise.type !== 'write') return;
+    
+    const userAnswer = input.value.trim();
+    const correctAnswer = currentExercise.correctAnswer || '';
+    const acceptableAnswers = currentExercise.acceptableAnswers || [correctAnswer];
+    
+    // Real-time feedback (only show if user has typed something)
+    if (userAnswer.length > 0) {
+        const normalizedUser = userAnswer.toLowerCase().trim();
+        const isCorrect = acceptableAnswers.some(ans => 
+            normalizedUser === ans.toLowerCase().trim() || 
+            normalizedUser === ans.trim()
+        );
+        
+        // Partial match feedback for Japanese
+        if (currentExercise.direction === 'en_to_jp') {
+            const correctChars = correctAnswer.split('');
+            const userChars = userAnswer.split('');
+            let matchingChars = 0;
+            
+            for (let i = 0; i < Math.min(correctChars.length, userChars.length); i++) {
+                if (correctChars[i] === userChars[i]) {
+                    matchingChars++;
+                } else {
+                    break;
+                }
+            }
+            
+            if (matchingChars > 0 && matchingChars < correctAnswer.length) {
+                feedback.innerHTML = `<div class="partial-match">✓ ${matchingChars}/${correctAnswer.length} characters correct</div>`;
+                feedback.style.display = 'block';
+            } else if (isCorrect) {
+                feedback.innerHTML = '<div class="full-match">✓ Correct!</div>';
+                feedback.style.display = 'block';
+            } else {
+                feedback.style.display = 'none';
+            }
+        } else {
+            // For English, just show if it matches
+            if (isCorrect) {
+                feedback.innerHTML = '<div class="full-match">✓ Correct!</div>';
+                feedback.style.display = 'block';
+            } else {
+                feedback.style.display = 'none';
+            }
+        }
+    } else {
+        feedback.style.display = 'none';
+    }
+}
+
+export function showHint() {
+    const hintContent = document.getElementById('hintContent');
+    if (hintContent) {
+        hintContent.style.display = hintContent.style.display === 'none' ? 'block' : 'none';
+    }
 }
 
 // Export for global access
