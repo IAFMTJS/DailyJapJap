@@ -31,11 +31,11 @@ export function renderWords(words) {
                 ${showFurigana && word.furigana ? `<div class="word-furigana">${escapeHtml(word.furigana)}</div>` : ''}
                 ${showTranslation ? `<div class="word-translation">${escapeHtml(word.translation)}</div>` : ''}
                 <div class="audio-controls">
-                    <button class="btn btn-primary" onclick="window.speakJapanese && window.speakJapanese('${escapeHtml(word.japanese)}')">
+                    <button class="btn btn-primary audio-btn" data-word-index="${index}" data-audio-type="word">
                         🔊 Speak
                     </button>
                     ${word.sentence ? `
-                        <button class="btn btn-secondary" onclick="window.speakJapanese && window.speakJapanese('${escapeHtml(word.sentence)}')">
+                        <button class="btn btn-secondary audio-btn" data-word-index="${index}" data-audio-type="sentence">
                             🔊 Sentence
                         </button>
                     ` : ''}
@@ -44,6 +44,19 @@ export function renderWords(words) {
             </div>
         `;
     }).join('');
+    
+    // Add event listeners for audio buttons using event delegation
+    wordGrid.querySelectorAll('.audio-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const wordIndex = parseInt(this.getAttribute('data-word-index'));
+            const audioType = this.getAttribute('data-audio-type');
+            if (wordIndex >= 0 && wordIndex < words.length && window.speakJapanese) {
+                const word = words[wordIndex];
+                const textToSpeak = audioType === 'sentence' && word.sentence ? word.sentence : word.japanese;
+                window.speakJapanese(textToSpeak);
+            }
+        });
+    });
     
     // Mark words as studied when viewed
     words.forEach((word, index) => {

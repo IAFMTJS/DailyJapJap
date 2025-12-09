@@ -137,90 +137,204 @@ export function renderSkillTree() {
     const weakSkills = window.skillStrengthService ? window.skillStrengthService.getWeakSkills(10) : [];
     const weakSkillIds = new Set(weakSkills.map(s => s.skillId));
     
-    skillTreeEl.innerHTML = learningPlan.map((lesson, index) => {
-        const isUnlocked = index === 0 || learningPlan[index - 1].day <= currentDay || 
-                          studyStats.dayProgress[learningPlan[index - 1].day]?.completed;
-        const isCompleted = studyStats.dayProgress[lesson.day]?.completed || false;
-        const isCurrent = lesson.day === currentDay;
-        const progress = studyStats.dayProgress[lesson.day]?.progress || 0;
-        const skillId = `day-${lesson.day}`;
-        const crownLevel = getCrownLevel(skillId);
-        const crowns = '👑'.repeat(crownLevel);
+    // Group lessons into sections (every 5 days = 1 section)
+    const sections = [];
+    const lessonsPerSection = 5;
+    
+    for (let i = 0; i < learningPlan.length; i += lessonsPerSection) {
+        const sectionLessons = learningPlan.slice(i, i + lessonsPerSection);
+        const sectionNumber = Math.floor(i / lessonsPerSection) + 1;
+        sections.push({
+            number: sectionNumber,
+            lessons: sectionLessons,
+            startDay: sectionLessons[0].day,
+            endDay: sectionLessons[sectionLessons.length - 1].day
+        });
+    }
+    
+    // Build path HTML with sections and connecting lines
+    let pathHTML = '<div class="enhanced-path">';
+    
+    sections.forEach((section, sectionIndex) => {
+        // Section header
+        const sectionCompleted = section.lessons.every(lesson => 
+            studyStats.dayProgress[lesson.day]?.completed
+        );
+        const sectionProgress = section.lessons.reduce((sum, lesson) => 
+            sum + (studyStats.dayProgress[lesson.day]?.progress || 0), 0
+        ) / section.lessons.length;
         
-        // Get skill strength
-        let strengthInfo = { strength: 0, isCracked: false, isWeak: false, needsPractice: false };
-        if (window.skillStrengthService && isUnlocked) {
-            strengthInfo = window.skillStrengthService.getSkillStrength(skillId);
-        }
-        
-        const strengthColor = window.skillStrengthService ? 
-            window.skillStrengthService.getStrengthColor(strengthInfo.strength) : '#6366f1';
-        const strengthLabel = window.skillStrengthService ? 
-            window.skillStrengthService.getStrengthLabel(strengthInfo.strength) : '';
-        
-        // Check if legendary (crown level 5+)
-        const isLegendary = crownLevel >= 5;
-        const isCracked = strengthInfo.isCracked;
-        const isWeak = strengthInfo.isWeak && !isCracked;
-        const needsPractice = strengthInfo.needsPractice;
-        
-        let icon = '📚';
-        if (lesson.type === 'hiragana') icon = 'あ';
-        else if (lesson.type === 'katakana') icon = 'カ';
-        else if (lesson.type === 'vocabulary') icon = '📖';
-        
-        // Add cracked/weak classes
-        let skillClasses = `${isCompleted ? 'completed' : ''} ${isCurrent ? 'current' : ''} ${!isUnlocked ? 'locked' : ''}`;
-        if (isCracked) skillClasses += ' cracked';
-        if (isWeak) skillClasses += ' weak';
-        if (isLegendary) skillClasses += ' legendary';
-        
-        return `
-            <div class="skill-node ${skillClasses}" 
-                 data-day="${lesson.day}" data-type="${lesson.type}" data-skill-id="${skillId}">
-                <div class="skill-icon">${icon}</div>
-                <div class="skill-info">
-                    <div class="skill-title">
-                        Day ${lesson.day}: ${lesson.title}
-                        ${crowns ? `<span class="skill-crowns">${crowns}</span>` : ''}
-                        ${isLegendary ? '<span class="legendary-badge">💎 Legendary</span>' : ''}
-                        ${isCracked ? '<span class="cracked-indicator">💔 Cracked</span>' : ''}
-                    </div>
-                    <div class="skill-description">${lesson.description}</div>
-                    ${lesson.type === 'vocabulary' ? `<div class="skill-meta">${lesson.wordCount} words</div>` : ''}
-                    ${lesson.type === 'hiragana' || lesson.type === 'katakana' ? `<div class="skill-meta">${lesson.characterCount} characters</div>` : ''}
-                    
-                    ${isUnlocked && window.skillStrengthService ? `
-                        <div class="skill-strength ${strengthInfo.isCracked ? 'cracked' : strengthInfo.isWeak ? 'weak' : strengthInfo.strength >= 75 ? 'good' : 'strong'}">
-                            <span class="strength-label">Strength: ${strengthLabel}</span>
-                            <div class="skill-strength-meter">
-                                <div class="skill-strength-fill" style="width: ${strengthInfo.strength}%; background-color: ${strengthColor};"></div>
-                            </div>
-                            <span class="strength-value">${strengthInfo.strength}%</span>
-                            ${strengthInfo.daysSincePractice > 0 ? `<span class="days-since">${strengthInfo.daysSincePractice} day${strengthInfo.daysSincePractice > 1 ? 's' : ''} ago</span>` : ''}
+        pathHTML += `
+            <div class="path-section" data-section="${section.number}">
+                <div class="section-header glass">
+                    <div class="section-number">Section ${section.number}</div>
+                    <div class="section-title">Days ${section.startDay}-${section.endDay}</div>
+                    <div class="section-progress">
+                        <div class="section-progress-bar">
+                            <div class="section-progress-fill" style="width: ${sectionProgress}%"></div>
                         </div>
-                    ` : ''}
-                    
-                    <div class="skill-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${progress}%"></div>
-                        </div>
-                        <span class="progress-text">${Math.round(progress)}%</span>
+                        <span>${Math.round(sectionProgress)}% Complete</span>
                     </div>
                 </div>
-                <div class="skill-actions">
-                    ${isUnlocked ? `
-                        <button class="premium-btn skill-btn" onclick="window.pathPage.startLesson(${lesson.day}, '${lesson.type}')">
-                            ${isCompleted ? 'Review' : isCurrent ? 'Start' : 'Continue'}
-                        </button>
-                        ${needsPractice ? `<button class="premium-btn skill-btn practice-btn" onclick="window.pathPage.practiceSkill('${skillId}', ${lesson.day}, '${lesson.type}')" title="Practice to strengthen">
-                            💪 Practice
-                        </button>` : ''}
-                    ` : '<div class="skill-locked">🔒</div>'}
+                <div class="path-nodes">
+        `;
+        
+        // Lessons in section
+        section.lessons.forEach((lesson, lessonIndex) => {
+            const globalIndex = sectionIndex * lessonsPerSection + lessonIndex;
+            const isUnlocked = globalIndex === 0 || learningPlan[globalIndex - 1].day <= currentDay || 
+                              studyStats.dayProgress[learningPlan[globalIndex - 1].day]?.completed;
+            const isCompleted = studyStats.dayProgress[lesson.day]?.completed || false;
+            const isCurrent = lesson.day === currentDay;
+            const progress = studyStats.dayProgress[lesson.day]?.progress || 0;
+            const skillId = `day-${lesson.day}`;
+            const crownLevel = getCrownLevel(skillId);
+            const crowns = '👑'.repeat(crownLevel);
+            
+            // Get skill strength
+            let strengthInfo = { strength: 0, isCracked: false, isWeak: false, needsPractice: false };
+            if (window.skillStrengthService && isUnlocked) {
+                strengthInfo = window.skillStrengthService.getSkillStrength(skillId);
+            }
+            
+            const strengthColor = window.skillStrengthService ? 
+                window.skillStrengthService.getStrengthColor(strengthInfo.strength) : '#6366f1';
+            const strengthLabel = window.skillStrengthService ? 
+                window.skillStrengthService.getStrengthLabel(strengthInfo.strength) : '';
+            
+            const isLegendary = crownLevel >= 5;
+            const isCracked = strengthInfo.isCracked;
+            const isWeak = strengthInfo.isWeak && !isCracked;
+            const needsPractice = strengthInfo.needsPractice;
+            
+            let icon = '📚';
+            if (lesson.type === 'hiragana') icon = 'あ';
+            else if (lesson.type === 'katakana') icon = 'カ';
+            else if (lesson.type === 'vocabulary') icon = '📖';
+            
+            let skillClasses = `${isCompleted ? 'completed' : ''} ${isCurrent ? 'current' : ''} ${!isUnlocked ? 'locked' : ''}`;
+            if (isCracked) skillClasses += ' cracked';
+            if (isWeak) skillClasses += ' weak';
+            if (isLegendary) skillClasses += ' legendary';
+            
+            // Path connection line (except for first lesson in section)
+            const showConnection = lessonIndex > 0 || sectionIndex > 0;
+            
+            pathHTML += `
+                ${showConnection ? '<div class="path-connector"></div>' : ''}
+                <div class="enhanced-skill-node ${skillClasses}" 
+                     data-day="${lesson.day}" 
+                     data-type="${lesson.type}" 
+                     data-skill-id="${skillId}"
+                     data-index="${globalIndex}">
+                    <div class="skill-node-glow"></div>
+                    <div class="skill-node-content">
+                        <div class="skill-icon-wrapper">
+                            <div class="skill-icon ${isCompleted ? 'completed-icon' : ''} ${isCurrent ? 'current-icon' : ''}">
+                                ${icon}
+                            </div>
+                            ${isCurrent ? '<div class="current-pulse"></div>' : ''}
+                        </div>
+                        <div class="skill-info">
+                            <div class="skill-header">
+                                <div class="skill-title">
+                                    <span class="skill-day">Day ${lesson.day}</span>
+                                    <span class="skill-name">${escapeHtml(lesson.title)}</span>
+                                </div>
+                                <div class="skill-badges">
+                                    ${crowns ? `<span class="skill-crowns">${crowns}</span>` : ''}
+                                    ${isLegendary ? '<span class="legendary-badge">💎</span>' : ''}
+                                    ${isCracked ? '<span class="cracked-badge">💔</span>' : ''}
+                                </div>
+                            </div>
+                            <div class="skill-description">${escapeHtml(lesson.description)}</div>
+                            <div class="skill-meta-info">
+                                ${lesson.type === 'vocabulary' ? `<span class="meta-item">📝 ${lesson.wordCount} words</span>` : ''}
+                                ${lesson.type === 'hiragana' || lesson.type === 'katakana' ? `<span class="meta-item">あ ${lesson.characterCount} chars</span>` : ''}
+                            </div>
+                            
+                            ${isUnlocked && window.skillStrengthService ? `
+                                <div class="skill-strength-compact">
+                                    <div class="strength-meter-compact">
+                                        <div class="strength-fill-compact" style="width: ${strengthInfo.strength}%; background: ${strengthColor};"></div>
+                                    </div>
+                                    <span class="strength-value-compact">${strengthInfo.strength}%</span>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="skill-progress-compact">
+                                <div class="progress-bar-compact">
+                                    <div class="progress-fill-compact" style="width: ${progress}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="skill-actions-compact">
+                            ${isUnlocked ? `
+                                <button class="path-btn ${isCurrent ? 'current-btn' : isCompleted ? 'review-btn' : 'start-btn'}" 
+                                        onclick="window.pathPage.startLesson(${lesson.day}, '${lesson.type}')">
+                                    ${isCompleted ? 'Review' : isCurrent ? 'Start' : 'Continue'}
+                                </button>
+                                ${needsPractice ? `
+                                    <button class="path-btn practice-btn" 
+                                            onclick="window.pathPage.practiceSkill('${skillId}', ${lesson.day}, '${lesson.type}')" 
+                                            title="Practice to strengthen">
+                                        💪
+                                    </button>
+                                ` : ''}
+                            ` : `
+                                <div class="skill-locked-compact">
+                                    <span class="lock-icon">🔒</span>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        pathHTML += `
                 </div>
             </div>
         `;
-    }).join('');
+        
+        // Section separator (except last)
+        if (sectionIndex < sections.length - 1) {
+            pathHTML += '<div class="section-separator"></div>';
+        }
+    });
+    
+    pathHTML += '</div>';
+    
+    // Add navigation controls
+    const navHTML = `
+        <div class="path-navigation glass">
+            <button class="path-nav-btn" onclick="window.pathPage.scrollToSection('prev')" id="prevSectionBtn">
+                ← Previous Section
+            </button>
+            <button class="path-jump-to-current" onclick="window.pathPage.jumpToCurrent()">
+                🎯 Jump to Current
+            </button>
+            <button class="path-nav-btn" onclick="window.pathPage.scrollToSection('next')" id="nextSectionBtn">
+                Next Section →
+            </button>
+        </div>
+    `;
+    
+    skillTreeEl.innerHTML = navHTML + pathHTML;
+    
+    // Update navigation button states
+    updateNavigationButtons();
+    
+    // Add scroll to current lesson
+    setTimeout(() => {
+        const currentLesson = skillTreeEl.querySelector('.enhanced-skill-node.current');
+        if (currentLesson) {
+            currentLesson.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 100);
+    
+    // Add intersection observer for navigation buttons
+    setupPathScrollObserver();
     
     // Add practice suggestions section if there are weak skills
     if (weakSkills.length > 0) {
@@ -546,5 +660,109 @@ export function startChapter(chapterNumber) {
 }
 
 // Export for global access
-window.pathPage = { load, renderSkillTree, startLesson, startChapter, practiceSkill, retry, updateDayProgress, getLearningPlan };
+function updateNavigationButtons() {
+    const sections = document.querySelectorAll('.path-section');
+    const currentSection = getCurrentSection();
+    
+    const prevBtn = document.getElementById('prevSectionBtn');
+    const nextBtn = document.getElementById('nextSectionBtn');
+    
+    if (prevBtn) {
+        prevBtn.disabled = currentSection === 0;
+    }
+    
+    if (nextBtn) {
+        nextBtn.disabled = currentSection >= sections.length - 1;
+    }
+}
+
+function getCurrentSection() {
+    const currentLesson = document.querySelector('.enhanced-skill-node.current');
+    if (!currentLesson) return 0;
+    
+    const section = currentLesson.closest('.path-section');
+    if (!section) return 0;
+    
+    const sections = Array.from(document.querySelectorAll('.path-section'));
+    return sections.indexOf(section);
+}
+
+export function scrollToSection(direction) {
+    const sections = Array.from(document.querySelectorAll('.path-section'));
+    const currentIndex = getCurrentSection();
+    
+    let targetIndex;
+    if (direction === 'prev') {
+        targetIndex = Math.max(0, currentIndex - 1);
+    } else {
+        targetIndex = Math.min(sections.length - 1, currentIndex + 1);
+    }
+    
+    if (sections[targetIndex]) {
+        sections[targetIndex].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        updateNavigationButtons();
+    }
+}
+
+export function jumpToCurrent() {
+    const currentLesson = document.querySelector('.enhanced-skill-node.current');
+    if (currentLesson) {
+        currentLesson.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Add visual highlight
+        currentLesson.style.animation = 'highlightPulse 1s ease';
+        setTimeout(() => {
+            currentLesson.style.animation = '';
+        }, 1000);
+    } else {
+        // Scroll to first unlocked lesson
+        const firstUnlocked = document.querySelector('.enhanced-skill-node:not(.locked)');
+        if (firstUnlocked) {
+            firstUnlocked.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+}
+
+function setupPathScrollObserver() {
+    const sections = document.querySelectorAll('.path-section');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                updateNavigationButtons();
+            }
+        });
+    }, { threshold: 0.3 });
+    
+    sections.forEach(section => observer.observe(section));
+}
+
+// Add highlight animation
+if (typeof document !== 'undefined') {
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes highlightPulse {
+            0%, 100% {
+                box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 50px rgba(99, 102, 241, 0.8);
+                transform: scale(1.05);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+window.pathPage = { 
+    load, 
+    renderSkillTree, 
+    startLesson, 
+    startChapter, 
+    practiceSkill, 
+    retry, 
+    updateDayProgress, 
+    getLearningPlan,
+    scrollToSection,
+    jumpToCurrent
+};
 

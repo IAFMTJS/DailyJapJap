@@ -270,7 +270,7 @@ function renderStory() {
                         <div class="japanese-text">${escapeHtml(line.text)}</div>
                         <div class="translation-text">${escapeHtml(line.translation)}</div>
                     </div>
-                    <button class="premium-btn audio-btn small" onclick="speakJapanese('${escapeHtml(line.text)}')">
+                    <button class="premium-btn audio-btn small" onclick="if(window.speakJapanese) window.speakJapanese('${escapeHtml(line.text)}')">
                         🔊
                     </button>
                 </div>

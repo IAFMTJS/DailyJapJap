@@ -117,11 +117,40 @@ function showQuestion() {
     }
     
     const question = quizWords[currentQuizIndex];
-    document.getElementById('quizJapanese').textContent = question.japanese;
-    document.getElementById('quizFurigana').textContent = question.furigana || '';
+    const quizJapaneseEl = document.getElementById('quizJapanese');
+    const quizFuriganaEl = document.getElementById('quizFurigana');
+    const quizQuestionEl = document.getElementById('quizQuestion');
+    
+    quizJapaneseEl.textContent = question.japanese;
+    quizFuriganaEl.textContent = question.furigana || '';
     document.getElementById('quizQuestionNum').textContent = currentQuizIndex + 1;
     document.getElementById('quizTotal').textContent = quizWords.length;
     document.getElementById('quizScore').textContent = quizScore;
+    
+    // Remove existing audio button if it exists
+    const existingAudioBtn = document.getElementById('quizAudioBtn');
+    if (existingAudioBtn) {
+        existingAudioBtn.remove();
+    }
+    
+    // Add audio button to the quiz question container
+    const audioBtn = document.createElement('button');
+    audioBtn.id = 'quizAudioBtn';
+    audioBtn.className = 'premium-btn audio-btn small';
+    audioBtn.innerHTML = '🔊';
+    audioBtn.title = 'Play audio';
+    audioBtn.style.margin = '10px auto';
+    audioBtn.style.display = 'block';
+    audioBtn.onclick = () => {
+        if (window.speakJapanese) {
+            window.speakJapanese(question.japanese);
+        }
+    };
+    
+    // Insert audio button after furigana
+    if (quizQuestionEl && quizFuriganaEl) {
+        quizQuestionEl.insertBefore(audioBtn, quizFuriganaEl.nextSibling);
+    }
     
     // Generate options
     const options = [question];

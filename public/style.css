@@ -1039,6 +1039,613 @@ body {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    position: relative;
+    padding: 2rem 0;
+}
+
+/* Enhanced Path Design */
+.enhanced-path {
+    position: relative;
+    padding: 2rem 0;
+}
+
+.path-section {
+    position: relative;
+    margin-bottom: 3rem;
+}
+
+.section-header {
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.section-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.section-title {
+    font-size: 1.2rem;
+    color: var(--text);
+    font-weight: 600;
+}
+
+.section-progress {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 200px;
+}
+
+.section-progress-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--bg-light);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.section-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.path-nodes {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-left: 2rem;
+}
+
+.path-connector {
+    position: absolute;
+    left: 3.5rem;
+    width: 3px;
+    height: 2rem;
+    background: linear-gradient(180deg, var(--primary), var(--secondary));
+    z-index: 1;
+    margin-top: -1rem;
+    animation: pathFlow 2s infinite;
+}
+
+@keyframes pathFlow {
+    0%, 100% {
+        opacity: 0.3;
+    }
+    50% {
+        opacity: 1;
+        box-shadow: 0 0 10px var(--primary);
+    }
+}
+
+.enhanced-skill-node {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: var(--glass-bg);
+    border: 2px solid var(--glass-border);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    z-index: 2;
+}
+
+.enhanced-skill-node::before {
+    content: '';
+    position: absolute;
+    left: -2rem;
+    width: 3px;
+    height: 100%;
+    background: var(--glass-border);
+    border-radius: 2px;
+}
+
+.enhanced-skill-node.completed::before {
+    background: linear-gradient(180deg, var(--success), var(--primary));
+}
+
+.enhanced-skill-node.current::before {
+    background: linear-gradient(180deg, var(--primary), var(--secondary));
+    box-shadow: 0 0 10px var(--primary);
+    animation: pathFlow 2s infinite;
+}
+
+.skill-node-glow {
+    position: absolute;
+    inset: -2px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: -1;
+    filter: blur(10px);
+}
+
+.enhanced-skill-node:hover .skill-node-glow {
+    opacity: 0.3;
+}
+
+.enhanced-skill-node:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--shadow-xl);
+    border-color: var(--primary);
+}
+
+.enhanced-skill-node.locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(0.5);
+}
+
+.enhanced-skill-node.locked:hover {
+    transform: none;
+}
+
+.enhanced-skill-node.current {
+    border-color: var(--primary);
+    box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+}
+
+.enhanced-skill-node.completed {
+    border-color: var(--success);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(99, 102, 241, 0.1));
+}
+
+.enhanced-skill-node.cracked {
+    border-color: var(--danger);
+    animation: crackPulse 2s infinite;
+}
+
+.enhanced-skill-node.weak {
+    border-color: var(--warning);
+}
+
+.enhanced-skill-node.legendary {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(255, 217, 61, 0.1), rgba(255, 107, 157, 0.1));
+    box-shadow: 0 0 40px rgba(255, 217, 61, 0.3);
+}
+
+@keyframes crackPulse {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
+    }
+}
+
+.skill-node-content {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.skill-icon-wrapper {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.skill-icon {
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-light);
+    border-radius: 16px;
+    font-size: 2.5rem;
+    transition: all 0.3s ease;
+    border: 2px solid var(--glass-border);
+}
+
+.enhanced-skill-node.current .skill-icon {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border-color: var(--primary);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+    animation: iconPulse 2s infinite;
+}
+
+.enhanced-skill-node.completed .skill-icon {
+    background: linear-gradient(135deg, var(--success), var(--primary));
+    border-color: var(--success);
+}
+
+@keyframes iconPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.current-pulse {
+    position: absolute;
+    inset: -5px;
+    border-radius: 16px;
+    border: 2px solid var(--primary);
+    animation: pulseRing 2s infinite;
+    pointer-events: none;
+}
+
+@keyframes pulseRing {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1.3);
+        opacity: 0;
+    }
+}
+
+.skill-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.skill-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.skill-title {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.skill-day {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.skill-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.3;
+}
+
+.skill-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.skill-crowns {
+    font-size: 1rem;
+}
+
+.legendary-badge {
+    font-size: 1.2rem;
+    animation: sparkle 2s infinite;
+}
+
+@keyframes sparkle {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+    }
+    50% {
+        transform: scale(1.2) rotate(180deg);
+    }
+}
+
+.cracked-badge {
+    font-size: 1.2rem;
+    animation: shake 0.5s infinite;
+}
+
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    25% {
+        transform: translateX(-2px);
+    }
+    75% {
+        transform: translateX(2px);
+    }
+}
+
+.skill-description {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.skill-meta-info {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.meta-item {
+    font-size: 0.85rem;
+    color: var(--primary-light);
+    padding: 0.25rem 0.75rem;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 12px;
+}
+
+.skill-strength-compact {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.strength-meter-compact {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-light);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.strength-fill-compact {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.strength-value-compact {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    min-width: 40px;
+    text-align: right;
+}
+
+.skill-progress-compact {
+    margin-top: 0.5rem;
+}
+
+.progress-bar-compact {
+    height: 4px;
+    background: var(--bg-light);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill-compact {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.skill-actions-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.path-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+.start-btn {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+}
+
+.start-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
+}
+
+.current-btn {
+    background: linear-gradient(135deg, var(--accent), var(--warning));
+    color: white;
+    animation: currentBtnPulse 2s infinite;
+}
+
+@keyframes currentBtnPulse {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(255, 217, 61, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(255, 217, 61, 0.8);
+    }
+}
+
+.review-btn {
+    background: var(--bg-light);
+    color: var(--text);
+    border: 2px solid var(--success);
+}
+
+.review-btn:hover {
+    background: var(--success);
+    color: white;
+}
+
+.practice-btn {
+    padding: 0.5rem;
+    background: var(--warning);
+    color: white;
+    font-size: 1.2rem;
+}
+
+.practice-btn:hover {
+    background: var(--danger);
+    transform: scale(1.1);
+}
+
+.skill-locked-compact {
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.5;
+}
+
+.lock-icon {
+    font-size: 1.5rem;
+}
+
+.section-separator {
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    margin: 3rem 0;
+    border-radius: 2px;
+    opacity: 0.5;
+}
+
+/* Path Navigation Controls */
+.path-navigation {
+    position: sticky;
+    top: 80px;
+    z-index: 100;
+    background: var(--bg);
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+}
+
+.path-nav-btn {
+    padding: 0.75rem 1.5rem;
+    background: var(--bg-light);
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+}
+
+.path-nav-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.path-nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.path-jump-to-current {
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.path-jump-to-current:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
+}
+
+/* Mobile Responsiveness for Enhanced Path */
+@media (max-width: 768px) {
+    .path-nodes {
+        padding-left: 1rem;
+    }
+    
+    .path-connector {
+        left: 2.5rem;
+    }
+    
+    .enhanced-skill-node::before {
+        left: -1rem;
+    }
+    
+    .skill-node-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .skill-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 2rem;
+    }
+    
+    .skill-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .skill-actions-compact {
+        flex-direction: row;
+        width: 100%;
+    }
+    
+    .path-btn {
+        flex: 1;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .section-progress {
+        width: 100%;
+    }
+    
+    .path-navigation {
+        flex-direction: column;
+        position: relative;
+        top: 0;
+    }
+    
+    .path-nav-btn,
+    .path-jump-to-current {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 .skill-node {
@@ -1559,6 +2166,210 @@ body {
     margin-top: 1rem;
     color: var(--text-muted);
     font-size: 0.9rem;
+}
+
+/* Writing Exercise Styles */
+.writing-exercise {
+    padding: 2rem;
+    background: var(--bg-light);
+    border-radius: 16px;
+    margin: 2rem 0;
+}
+
+.writing-prompt {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: var(--bg);
+    border-radius: 12px;
+    border: 2px solid var(--glass-border);
+}
+
+.prompt-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.prompt-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.prompt-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1.4;
+}
+
+.prompt-value.japanese-text {
+    font-size: 2rem;
+    font-family: 'Noto Sans JP', sans-serif;
+}
+
+.prompt-furigana {
+    font-size: 1.2rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+.writing-instruction {
+    font-size: 1rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 0.5rem;
+}
+
+.writing-input-container {
+    position: relative;
+    margin: 2rem 0;
+}
+
+.writing-input {
+    width: 100%;
+    padding: 1.5rem;
+    background: var(--bg);
+    border: 3px solid var(--primary);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 1.5rem;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+}
+
+.writing-input.japanese-input {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 1.8rem;
+    ime-mode: active;
+}
+
+.writing-input:focus {
+    outline: none;
+    border-color: var(--secondary);
+    box-shadow: 0 0 25px rgba(199, 125, 255, 0.4);
+    transform: scale(1.02);
+}
+
+.writing-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.ime-hint {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(99, 102, 241, 0.1);
+    border-left: 4px solid var(--primary);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.writing-hint {
+    margin-top: 1.5rem;
+}
+
+.hint-btn {
+    padding: 0.75rem 1.5rem;
+    background: var(--bg-light);
+    border: 2px solid var(--glass-border);
+    border-radius: 8px;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.hint-btn:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.hint-content {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(255, 217, 61, 0.1);
+    border-left: 4px solid var(--accent);
+    border-radius: 8px;
+    font-size: 1.1rem;
+    color: var(--text);
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.writing-feedback {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-align: center;
+    display: none;
+}
+
+.partial-match {
+    color: var(--accent);
+    background: rgba(255, 217, 61, 0.1);
+    border: 2px solid var(--accent);
+    padding: 0.75rem;
+    border-radius: 8px;
+}
+
+.full-match {
+    color: var(--success);
+    background: rgba(16, 185, 129, 0.1);
+    border: 2px solid var(--success);
+    padding: 0.75rem;
+    border-radius: 8px;
+    animation: successPulse 0.5s ease;
+}
+
+@keyframes successPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+@media (max-width: 768px) {
+    .writing-input {
+        font-size: 1.2rem;
+        padding: 1.25rem;
+    }
+    
+    .writing-input.japanese-input {
+        font-size: 1.5rem;
+    }
+    
+    .prompt-value {
+        font-size: 1.5rem;
+    }
+    
+    .prompt-value.japanese-text {
+        font-size: 1.8rem;
+    }
 }
 
 .exercise-results {
@@ -2117,6 +2928,249 @@ body {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-10px); }
     75% { transform: translateX(10px); }
+}
+
+/* Celebration Animations */
+@keyframes celebrationPop {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes celebrationFadeOut {
+    from {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+}
+
+@keyframes celebrationShake {
+    0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+    25% { transform: translate(-50%, -50%) rotate(-10deg); }
+    75% { transform: translate(-50%, -50%) rotate(10deg); }
+}
+
+@keyframes celebrationSlideDown {
+    from {
+        transform: translateX(-50%) translateY(-100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes celebrationSlideUp {
+    from {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(-50%) translateY(-100px);
+        opacity: 0;
+    }
+}
+
+@keyframes celebrationSlideInRight {
+    from {
+        transform: translateX(200px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes celebrationSlideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(200px);
+        opacity: 0;
+    }
+}
+
+.celebration-modal {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.celebration-modal.show {
+    opacity: 1;
+}
+
+.celebration-content {
+    text-align: center;
+}
+
+.celebration-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    animation: bounce 0.6s ease-out;
+}
+
+.celebration-streak {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.streak-fire {
+    font-size: 3rem;
+    animation: pulse 1s infinite;
+}
+
+.streak-text {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.celebration-perfect .perfect-stars {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    animation: bounce 0.6s ease-out;
+}
+
+.celebration-xp {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.xp-icon {
+    font-size: 2rem;
+}
+
+.xp-amount {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Word Order Exercise Styles */
+.word-order-exercise {
+    padding: 2rem;
+    background: var(--bg-light);
+    border-radius: 12px;
+    margin: 2rem 0;
+}
+
+.word-order-instructions {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 1.2rem;
+    color: var(--text-muted);
+}
+
+.word-order-words {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 2rem;
+    min-height: 100px;
+    padding: 1.5rem;
+    background: var(--bg);
+    border-radius: 12px;
+    border: 2px dashed var(--glass-border);
+}
+
+.word-order-word {
+    padding: 1rem 1.5rem;
+    background: var(--primary);
+    color: white;
+    border-radius: 8px;
+    cursor: move;
+    user-select: none;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.word-order-word:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.word-order-word.selected {
+    background: var(--accent);
+    transform: scale(1.1);
+    box-shadow: var(--shadow-lg);
+}
+
+.word-order-sentence {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    min-height: 80px;
+    padding: 1.5rem;
+    background: var(--bg);
+    border-radius: 12px;
+    border: 2px solid var(--glass-border);
+}
+
+.word-order-slot {
+    min-width: 120px;
+    min-height: 50px;
+    padding: 0.75rem 1rem;
+    background: var(--bg-light);
+    border: 2px dashed var(--primary);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.word-order-slot.filled {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.word-order-slot.drag-over {
+    background: var(--accent);
+    border-color: var(--accent);
+    transform: scale(1.05);
+}
+
+.word-order-actions {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.word-order-reset {
+    background: var(--danger);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.word-order-reset:hover {
+    background: var(--danger);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .matching-actions {

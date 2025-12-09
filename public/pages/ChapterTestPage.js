@@ -236,10 +236,10 @@ function renderQuestion(question) {
                 <div class="test-question">
                     <h3 class="question-text">${escapeHtml(question.question)}</h3>
                     <div class="audio-question-container">
-                        <button class="premium-btn large audio-btn" onclick="speakJapanese('${escapeHtml(question.audioText)}')">
+                        <button class="premium-btn large audio-btn" onclick="if(window.speakJapanese) window.speakJapanese('${escapeHtml(question.audioText)}')">
                             🔊 Play Audio
                         </button>
-                        <button class="premium-btn small" onclick="speakJapanese('${escapeHtml(question.audioText)}')" title="Repeat">
+                        <button class="premium-btn small" onclick="if(window.speakJapanese) window.speakJapanese('${escapeHtml(question.audioText)}')" title="Repeat">
                             🔁
                         </button>
                     </div>

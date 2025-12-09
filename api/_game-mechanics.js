@@ -124,6 +124,7 @@ const EXERCISE_TYPES = {
     MULTIPLE_CHOICE: 'multiple_choice',
     TAP_WORDS: 'tap_words',
     TAP_PAIRS: 'tap_pairs',
+    WRITE: 'write',
 };
 
 // Generate exercises based on skill level and type

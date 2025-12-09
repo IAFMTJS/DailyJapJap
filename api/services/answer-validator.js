@@ -31,6 +31,8 @@ class AnswerValidator {
                 return this.validateFillBlank(exercise, userAnswer);
             case 'word_order':
                 return this.validateWordOrder(exercise, userAnswer);
+            case 'write':
+                return this.validateWriting(exercise, userAnswer);
             case 'speak':
                 return this.validateSpeaking(exercise, userAnswer);
             default:
@@ -286,6 +288,84 @@ class AnswerValidator {
             correctPositions: correctPositions,
             totalPositions: exercise.correctOrder.length
         };
+    }
+    
+    /**
+     * Validate writing/typing exercise
+     */
+    validateWriting(exercise, userAnswer) {
+        if (!userAnswer || typeof userAnswer !== 'string') {
+            return {
+                correct: false,
+                score: 0,
+                feedback: 'Please type your answer'
+            };
+        }
+        
+        const userAnswerTrimmed = userAnswer.trim();
+        const direction = exercise.direction || 'en_to_jp';
+        const isJapanese = direction === 'en_to_jp';
+        const acceptableAnswers = exercise.acceptableAnswers || [exercise.correctAnswer];
+        
+        // Check exact matches first
+        const exactMatch = acceptableAnswers.some(ans => 
+            userAnswerTrimmed === ans || 
+            userAnswerTrimmed.toLowerCase() === ans.toLowerCase()
+        );
+        
+        if (exactMatch) {
+            return {
+                correct: true,
+                score: 1.0,
+                feedback: 'Perfect! ✅',
+                correctAnswer: exercise.correctAnswer,
+                matchType: 'exact'
+            };
+        }
+        
+        // Use fuzzy matching for Japanese
+        if (isJapanese) {
+            const match = fuzzyMatcher.matchJapanese(userAnswerTrimmed, exercise.correctAnswer);
+            
+            // Also check against acceptable answers (like furigana)
+            let bestMatch = match;
+            for (const acceptable of acceptableAnswers) {
+                if (acceptable !== exercise.correctAnswer) {
+                    const altMatch = fuzzyMatcher.matchJapanese(userAnswerTrimmed, acceptable);
+                    if (altMatch.score > bestMatch.score) {
+                        bestMatch = altMatch;
+                    }
+                }
+            }
+            
+            return {
+                correct: bestMatch.match,
+                score: bestMatch.score,
+                feedback: bestMatch.match
+                    ? (bestMatch.type === 'exact' ? 'Perfect! ✅' : 'Almost correct! ✅')
+                    : `Incorrect. The correct answer is: ${exercise.correctAnswer}`,
+                correctAnswer: exercise.correctAnswer,
+                matchType: bestMatch.type
+            };
+        } else {
+            // English validation with fuzzy matching
+            const match = fuzzyMatcher.matchAnswer(
+                userAnswerTrimmed,
+                exercise.correctAnswer,
+                acceptableAnswers,
+                0.85 // Slightly stricter for writing exercises
+            );
+            
+            return {
+                correct: match.match,
+                score: match.score,
+                feedback: match.match
+                    ? this.getFeedbackForMatch(match.type, match.score)
+                    : `Incorrect. The correct answer is: ${exercise.correctAnswer}`,
+                correctAnswer: exercise.correctAnswer,
+                matchType: match.type
+            };
+        }
     }
     
     /**

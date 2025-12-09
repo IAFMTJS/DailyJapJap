@@ -175,6 +175,7 @@ class ExerciseGenerator {
             EXERCISE_TYPES.FILL_BLANK,
             EXERCISE_TYPES.MATCH,
             EXERCISE_TYPES.WORD_ORDER,
+            EXERCISE_TYPES.WRITE,
         ];
         
         if (typeFilter) {
@@ -189,12 +190,13 @@ class ExerciseGenerator {
                 EXERCISE_TYPES.TRANSLATE,
             ];
         } else if (difficulty <= 3) {
-            // Intermediate: add listening and fill blank
+            // Intermediate: add listening, fill blank, and writing
             return [
                 EXERCISE_TYPES.MULTIPLE_CHOICE,
                 EXERCISE_TYPES.TRANSLATE,
                 EXERCISE_TYPES.LISTEN,
                 EXERCISE_TYPES.FILL_BLANK,
+                EXERCISE_TYPES.WRITE,
             ];
         } else {
             // Advanced: all types
@@ -230,6 +232,8 @@ class ExerciseGenerator {
                 return await this.generateMatching(word, difficulty);
             case EXERCISE_TYPES.WORD_ORDER:
                 return await this.generateWordOrder(word, difficulty);
+            case EXERCISE_TYPES.WRITE:
+                return await this.generateWriting(word, difficulty);
             default:
                 return await this.generateMultipleChoice(word, difficulty);
         }
@@ -460,6 +464,55 @@ class ExerciseGenerator {
             difficulty: difficulty,
             points: 20,
             word: word
+        };
+    }
+    
+    /**
+     * Generate writing/typing exercise
+     */
+    async generateWriting(word, difficulty) {
+        // Writing exercises: type Japanese from English prompt
+        const direction = Math.random() > 0.7 ? 'en_to_jp' : 'jp_to_en';
+        
+        let question, correctAnswer, hint, acceptableAnswers;
+        
+        if (direction === 'en_to_jp') {
+            // Type Japanese from English
+            question = `Type "${word.translation}" in Japanese:`;
+            correctAnswer = word.japanese;
+            hint = word.furigana || `Hint: ${word.japanese}`;
+            acceptableAnswers = [word.japanese];
+            // Also accept furigana if available
+            if (word.furigana && word.furigana !== word.japanese) {
+                acceptableAnswers.push(word.furigana);
+            }
+        } else {
+            // Type English from Japanese
+            question = `Type "${word.japanese}" in English:`;
+            correctAnswer = word.translation;
+            hint = `Hint: ${word.translation}`;
+            acceptableAnswers = [word.translation.toLowerCase()];
+            // Accept variations
+            const lower = word.translation.toLowerCase();
+            if (lower.includes('hello')) acceptableAnswers.push('hi', 'hey');
+            if (lower.includes('thank')) acceptableAnswers.push('thanks', 'thank you');
+            if (lower.includes('goodbye')) acceptableAnswers.push('bye', 'see you');
+        }
+        
+        return {
+            id: `ex_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            type: 'write',
+            direction: direction,
+            question: question,
+            correctAnswer: correctAnswer,
+            acceptableAnswers: acceptableAnswers,
+            hint: hint,
+            word: word,
+            difficulty: difficulty,
+            points: 25, // Writing exercises worth more points
+            explanation: direction === 'en_to_jp' 
+                ? 'Type the Japanese word or phrase' 
+                : 'Type the English translation'
         };
     }
     

@@ -207,15 +207,26 @@ async function showNextExercise() {
                 );
             }
         }
+        
+        // Initialize word order exercise if needed
+        if (currentExercise.type === 'word_order') {
+            initializeWordOrderExercise();
+        }
     }
     
     if (exerciseActions) {
-        exerciseActions.innerHTML = '<button class="premium-btn" onclick="window.exercisePage.checkAnswer()">Check</button>';
+        exerciseActions.innerHTML = '<button class="premium-btn" id="checkAnswerBtn" onclick="window.exercisePage.checkAnswer()">Check</button>';
     }
     
     updateHeartsDisplay();
     selectedOption = null;
     selectedOptionIndex = null;
+    
+    // Re-enable the check button if it was disabled
+    const checkBtn = document.getElementById('checkAnswerBtn');
+    if (checkBtn) {
+        checkBtn.disabled = false;
+    }
 }
 
 function renderExercise(exercise) {
@@ -325,6 +336,89 @@ function renderExercise(exercise) {
                         }).join('')}
                     </div>
                     ${exercise.explanation ? `<p class="exercise-hint">💡 ${escapeHtml(exercise.explanation)}</p>` : ''}
+                </div>
+            `;
+        case 'word_order':
+            return `
+                <div class="exercise-question">
+                    <h3>${escapeHtml(exercise.question || 'Arrange the words in the correct order')}</h3>
+                    <div class="word-order-exercise">
+                        <div class="word-order-instructions">
+                            ${exercise.instruction || 'Drag and drop the words to form a correct sentence'}
+                        </div>
+                        <div class="word-order-words" id="wordOrderWords">
+                            ${(exercise.words || []).map((word, idx) => `
+                                <div class="word-order-word" draggable="true" data-word="${escapeHtml(word)}" data-index="${idx}">
+                                    ${escapeHtml(word)}
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="word-order-sentence" id="wordOrderSentence">
+                            ${(exercise.correctOrder || []).map((_, idx) => `
+                                <div class="word-order-slot" data-slot-index="${idx}"></div>
+                            `).join('')}
+                        </div>
+                        <div class="word-order-actions">
+                            <button class="premium-btn" onclick="window.exercisePage.resetWordOrder()">Reset</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        case 'write':
+            const isJapanese = exercise.direction === 'en_to_jp';
+            return `
+                <div class="exercise-question">
+                    <h3>${escapeHtml(exercise.question)}</h3>
+                    <div class="writing-exercise">
+                        <div class="writing-prompt">
+                            ${exercise.direction === 'en_to_jp' ? `
+                                <div class="prompt-text">
+                                    <span class="prompt-label">English:</span>
+                                    <span class="prompt-value">${escapeHtml(exercise.word?.translation || exercise.correctAnswer)}</span>
+                                </div>
+                                <div class="writing-instruction">
+                                    Type this in Japanese (hiragana, katakana, or kanji)
+                                </div>
+                            ` : `
+                                <div class="prompt-text">
+                                    <span class="prompt-label">Japanese:</span>
+                                    <span class="prompt-value japanese-text">${escapeHtml(exercise.word?.japanese || exercise.correctAnswer)}</span>
+                                    ${exercise.word?.furigana ? `<span class="prompt-furigana">${escapeHtml(exercise.word.furigana)}</span>` : ''}
+                                </div>
+                                <div class="writing-instruction">
+                                    Type the English translation
+                                </div>
+                            `}
+                        </div>
+                        <div class="writing-input-container">
+                            <input type="text" 
+                                   id="exerciseAnswer" 
+                                   class="premium-input writing-input ${isJapanese ? 'japanese-input' : ''}"
+                                   placeholder="${isJapanese ? 'Type in Japanese (use IME)...' : 'Type the English translation...'}"
+                                   autocomplete="off"
+                                   spellcheck="false"
+                                   ${isJapanese ? 'lang="ja"' : ''}
+                                   ${isJapanese ? 'ime-mode: active;' : ''}
+                                   onkeypress="if(event.key==='Enter') window.exercisePage.checkAnswer()"
+                                   oninput="window.exercisePage.onWritingInput(event)">
+                            ${isJapanese ? `
+                                <div class="ime-hint">
+                                    💡 Tip: Enable Japanese IME (Input Method Editor) in your system settings to type Japanese characters
+                                </div>
+                            ` : ''}
+                        </div>
+                        ${exercise.hint ? `
+                            <div class="writing-hint">
+                                <button class="hint-btn" onclick="window.exercisePage.showHint()">
+                                    💡 Show Hint
+                                </button>
+                                <div class="hint-content" id="hintContent" style="display: none;">
+                                    ${escapeHtml(exercise.hint)}
+                                </div>
+                            </div>
+                        ` : ''}
+                        <div class="writing-feedback" id="writingFeedback"></div>
+                    </div>
                 </div>
             `;
         case 'listen':
@@ -475,6 +569,19 @@ export async function checkAnswer(matchedPairs = null) {
             const input = document.getElementById(`blank_${idx}`);
             return input ? input.value.trim() : '';
         });
+    } else if (currentExercise.type === 'word_order') {
+        const slots = document.querySelectorAll('.word-order-slot');
+        userAnswer = Array.from(slots).map(slot => {
+            const wordEl = slot.querySelector('.word-order-word');
+            return wordEl ? wordEl.dataset.word : '';
+        }).filter(word => word);
+    } else if (currentExercise.type === 'write') {
+        const answerInput = document.getElementById('exerciseAnswer');
+        userAnswer = answerInput ? answerInput.value.trim() : '';
+        if (!userAnswer) {
+            showCelebration('Please type your answer', 'error');
+            return;
+        }
     } else {
         showCelebration('Exercise type not yet implemented', 'error');
         return;
@@ -510,6 +617,16 @@ export async function checkAnswer(matchedPairs = null) {
             // CORRECT ANSWER - Do NOT lose hearts
             exerciseScore++;
             
+            // Play sound effect
+            if (window.soundService) {
+                window.soundService.playSound('correct');
+            }
+            
+            // Show celebration animation
+            if (window.celebrationService) {
+                window.celebrationService.celebrate('correct', '', { position: 'center' });
+            }
+            
             // Use eventBus to emit XP gain event (if available)
             const xpGained = Math.round(validationResult.score * (currentExercise.points || 10));
             if (window.eventBus) {
@@ -519,6 +636,11 @@ export async function checkAnswer(matchedPairs = null) {
             // Also use xpService for backward compatibility
             if (window.xpService) {
                 window.xpService.addXP(xpGained, 'Correct answer');
+            }
+            
+            // Show XP animation
+            if (window.celebrationService && xpGained > 0) {
+                window.celebrationService.celebrate('xp', `+${xpGained} XP`, { xp: xpGained });
             }
             
             // Update skill strength (if service available)
@@ -536,29 +658,104 @@ export async function checkAnswer(matchedPairs = null) {
             console.log('✅ Correct answer! Score:', exerciseScore, 'XP gained:', xpGained);
             
             // Update UI to show correct answer
-            updateExerciseFeedback(validationResult, true);
+            try {
+                updateExerciseFeedback(validationResult, true);
+            } catch (error) {
+                console.warn('Error updating exercise feedback:', error);
+            }
             
-            setTimeout(async () => {
-                exerciseIndex++;
-                if (currentSessionId) {
-                    try {
-                        await api.put(`/session?action=next&sessionId=${currentSessionId}`);
-                    } catch (error) {
-                        console.warn('Could not advance session:', error);
+            // Disable the check button to prevent double-submission
+            const checkBtn = document.getElementById('checkAnswerBtn') || document.querySelector('#exerciseActions .premium-btn');
+            if (checkBtn) {
+                checkBtn.disabled = true;
+                checkBtn.textContent = '✓ Correct!';
+                checkBtn.style.pointerEvents = 'none';
+            }
+            
+            // Advance to next exercise after a short delay
+            console.log('Setting timeout to advance to next exercise in 2 seconds...');
+            setTimeout(() => {
+                console.log('Timeout fired! Advancing to next exercise...');
+                console.log('Current exerciseIndex:', exerciseIndex, 'exerciseSet.length:', exerciseSet.length);
+                
+                try {
+                    exerciseIndex++;
+                    console.log('Incremented exerciseIndex to:', exerciseIndex);
+                    
+                    // Check if we've completed all exercises BEFORE trying to show next
+                    if (exerciseIndex >= exerciseSet.length) {
+                        console.log('All exercises completed! Finishing session...');
+                        finishExerciseSession();
+                        return;
+                    }
+                    
+                    // Update session asynchronously (don't block on this)
+                    if (currentSessionId) {
+                        api.put(`/session?action=next&sessionId=${currentSessionId}`).catch(error => {
+                            console.warn('Could not advance session:', error);
+                        });
+                    }
+                    
+                    // Show next exercise
+                    console.log('Calling showNextExercise()...');
+                    showNextExercise().catch(error => {
+                        console.error('Error in showNextExercise:', error);
+                        // Fallback: try to show next exercise directly
+                        if (exerciseIndex < exerciseSet.length && exerciseSet[exerciseIndex]) {
+                            currentExercise = exerciseSet[exerciseIndex];
+                            const exerciseContent = document.getElementById('exerciseContent');
+                            if (exerciseContent) {
+                                exerciseContent.innerHTML = renderExercise(currentExercise);
+                                if (currentExercise.type === 'word_order') {
+                                    initializeWordOrderExercise();
+                                }
+                            }
+                        } else {
+                            finishExerciseSession();
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error in setTimeout callback:', error);
+                    // Last resort: try to show next exercise
+                    if (exerciseIndex < exerciseSet.length && exerciseSet[exerciseIndex]) {
+                        currentExercise = exerciseSet[exerciseIndex];
+                        const exerciseContent = document.getElementById('exerciseContent');
+                        if (exerciseContent) {
+                            exerciseContent.innerHTML = renderExercise(currentExercise);
+                            if (currentExercise.type === 'word_order') {
+                                initializeWordOrderExercise();
+                            }
+                        }
+                    } else {
+                        finishExerciseSession();
                     }
                 }
-                showNextExercise();
             }, 2000);
         } else {
             // WRONG ANSWER - Lose a heart
             exerciseMistakes++;
             console.log('❌ Wrong answer. Mistakes:', exerciseMistakes);
             
+            // Play incorrect sound
+            if (window.soundService) {
+                window.soundService.playSound('incorrect');
+            }
+            
+            // Show incorrect animation
+            if (window.celebrationService) {
+                window.celebrationService.celebrate('incorrect', '', { position: 'center' });
+            }
+            
             // Only lose heart if we actually have hearts to lose
             const heartLost = loseHeart();
             if (heartLost) {
                 exerciseHearts--;
                 console.log('💔 Heart lost. Remaining:', exerciseHearts);
+                
+                // Play heart lost sound
+                if (window.soundService) {
+                    window.soundService.playSound('heartLost');
+                }
             }
             
             // Update skill strength for incorrect answer
@@ -827,6 +1024,119 @@ export function setSpeed(speed) {
     }
 }
 
+let draggedWord = null;
+
+function initializeWordOrderExercise() {
+    const wordsContainer = document.getElementById('wordOrderWords');
+    const sentenceContainer = document.getElementById('wordOrderSentence');
+    
+    if (!wordsContainer || !sentenceContainer) return;
+    
+    const words = Array.from(wordsContainer.querySelectorAll('.word-order-word'));
+    const slots = Array.from(sentenceContainer.querySelectorAll('.word-order-slot'));
+    
+    // Shuffle words initially
+    const shuffled = [...words].sort(() => Math.random() - 0.5);
+    wordsContainer.innerHTML = '';
+    shuffled.forEach(word => wordsContainer.appendChild(word));
+    
+    // Make words draggable
+    words.forEach(word => {
+        word.addEventListener('dragstart', handleDragStart);
+        word.addEventListener('dragend', handleDragEnd);
+    });
+    
+    // Make slots droppable
+    slots.forEach(slot => {
+        slot.addEventListener('dragover', handleDragOver);
+        slot.addEventListener('drop', handleDrop);
+        slot.addEventListener('dragleave', handleDragLeave);
+    });
+}
+
+function handleDragStart(e) {
+    draggedWord = this;
+    this.classList.add('selected');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.innerHTML);
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('selected');
+    document.querySelectorAll('.word-order-slot').forEach(slot => {
+        slot.classList.remove('drag-over');
+    });
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    this.classList.add('drag-over');
+    return false;
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
+    
+    this.classList.remove('drag-over');
+    
+    if (draggedWord && this.querySelector('.word-order-word') === null) {
+        // Move word to slot
+        this.appendChild(draggedWord);
+        draggedWord.classList.remove('selected');
+        draggedWord = null;
+        
+        // Check if all slots are filled
+        const slots = document.querySelectorAll('.word-order-slot');
+        const allFilled = Array.from(slots).every(slot => 
+            slot.querySelector('.word-order-word') !== null
+        );
+        
+        if (allFilled) {
+            // Auto-check answer after a short delay
+            setTimeout(() => {
+                checkAnswer();
+            }, 500);
+        }
+    }
+    
+    return false;
+}
+
+export function resetWordOrder() {
+    if (!currentExercise || currentExercise.type !== 'word_order') return;
+    
+    const wordsContainer = document.getElementById('wordOrderWords');
+    const sentenceContainer = document.getElementById('wordOrderSentence');
+    
+    if (!wordsContainer || !sentenceContainer) return;
+    
+    // Get all words from slots
+    const wordsInSlots = Array.from(sentenceContainer.querySelectorAll('.word-order-word'));
+    
+    // Move all words back to words container
+    wordsInSlots.forEach(word => {
+        wordsContainer.appendChild(word);
+    });
+    
+    // Re-shuffle
+    const words = Array.from(wordsContainer.querySelectorAll('.word-order-word'));
+    const shuffled = [...words].sort(() => Math.random() - 0.5);
+    wordsContainer.innerHTML = '';
+    shuffled.forEach(word => wordsContainer.appendChild(word));
+    
+    // Re-initialize drag and drop
+    initializeWordOrderExercise();
+}
+
 // Export for global access
 window.exercisePage = { 
     init, 
@@ -836,5 +1146,8 @@ window.exercisePage = {
     checkAnswer,
     playAudio,
     repeatAudio,
-    setSpeed
+    setSpeed,
+    resetWordOrder,
+    onWritingInput,
+    showHint
 };
